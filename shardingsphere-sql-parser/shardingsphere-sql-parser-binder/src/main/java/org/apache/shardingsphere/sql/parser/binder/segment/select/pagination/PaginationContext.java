@@ -19,10 +19,10 @@ package org.apache.shardingsphere.sql.parser.binder.segment.select.pagination;
 
 import lombok.Getter;
 import org.apache.shardingsphere.sql.parser.binder.statement.dml.SelectStatementContext;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.pagination.NumberLiteralPaginationValueSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.pagination.PaginationValueSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.pagination.ParameterMarkerPaginationValueSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.pagination.limit.LimitValueSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.pagination.NumberLiteralPaginationValueSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.pagination.PaginationValueSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.pagination.ParameterMarkerPaginationValueSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.pagination.limit.LimitValueSegment;
 
 import java.util.List;
 import java.util.Optional;
@@ -133,18 +133,18 @@ public final class PaginationContext {
     /**
      * Get revised row count.
      * 
-     * @param shardingStatement sharding optimized statement
+     * @param selectStatementContext select statement context
      * @return revised row count
      */
-    public long getRevisedRowCount(final SelectStatementContext shardingStatement) {
-        if (isMaxRowCount(shardingStatement)) {
+    public long getRevisedRowCount(final SelectStatementContext selectStatementContext) {
+        if (isMaxRowCount(selectStatementContext)) {
             return Integer.MAX_VALUE;
         }
         return rowCountSegment instanceof LimitValueSegment ? actualOffset + actualRowCount : actualRowCount;
     }
     
-    private boolean isMaxRowCount(final SelectStatementContext shardingStatement) {
-        return (!shardingStatement.getGroupByContext().getItems().isEmpty()
-                || !shardingStatement.getProjectionsContext().getAggregationProjections().isEmpty()) && !shardingStatement.isSameGroupByAndOrderByItems();
+    private boolean isMaxRowCount(final SelectStatementContext selectStatementContext) {
+        return (!selectStatementContext.getGroupByContext().getItems().isEmpty()
+                || !selectStatementContext.getProjectionsContext().getAggregationProjections().isEmpty()) && !selectStatementContext.isSameGroupByAndOrderByItems();
     }
 }

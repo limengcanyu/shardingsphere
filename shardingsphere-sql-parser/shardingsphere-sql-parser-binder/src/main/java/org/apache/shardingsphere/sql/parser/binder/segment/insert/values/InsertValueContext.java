@@ -19,9 +19,9 @@ package org.apache.shardingsphere.sql.parser.binder.segment.insert.values;
 
 import lombok.Getter;
 import lombok.ToString;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.expr.ExpressionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.expr.simple.LiteralExpressionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.LiteralExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -81,6 +81,17 @@ public final class InsertValueContext {
     public Object getValue(final int index) {
         ExpressionSegment valueExpression = valueExpressions.get(index);
         return valueExpression instanceof ParameterMarkerExpressionSegment ? parameters.get(getParameterIndex(valueExpression)) : ((LiteralExpressionSegment) valueExpression).getLiterals();
+    }
+
+    /**
+     * Get parameter index via column index.
+     *
+     * @param index column index
+     * @return parameter index
+     */
+    public int getParameterIndex(final int index) {
+        ExpressionSegment valueExpression = valueExpressions.get(index);
+        return getParameterIndex(valueExpression);
     }
     
     private int getParameterIndex(final ExpressionSegment valueExpression) {

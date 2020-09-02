@@ -10,9 +10,9 @@ chapter = true
 
 ## 前置条件
 
-- 熟悉[官方网站](https://shardingsphere.apache.org)
-- 熟悉[GitHub 协同开发流程](https://help.github.com/categories/collaborating-with-issues-and-pull-requests/)
-- 熟练掌握[Markdown](http://www.markdown.cn/)
+- 熟悉[官方网站](https://shardingsphere.apache.org/index_zh.html)
+- 熟悉[GitHub 协同开发流程](https://help.github.com/cn/github/collaborating-with-issues-and-pull-requests)
+- 熟练掌握[Markdown](https://help.github.com/cn/github/writing-on-github/basic-writing-and-formatting-syntax)
 - 熟悉[Hugo](https://gohugo.io/)
 
 ## Fork文档项目
@@ -37,29 +37,34 @@ shardingsphere
   ├─document
   │  ├─archetypes
   │  ├─content
+  │  │  ├─dev-manual
   │  │  ├─downloads
   │  │  ├─faq
   │  │  ├─features
-  │  │  │  ├─orchestration
+  │  │  │  ├─encrypt
+  │  │  │  ├─governance
+  │  │  │  ├─pluggable-architecture
   │  │  │  ├─read-write-split
+  │  │  │  ├─replica
+  │  │  │  ├─scaling
+  │  │  │  ├─shadow
   │  │  │  ├─sharding
   │  │  │  │  ├─concept
-  │  │  │  │  ├─other-features
   │  │  │  │  ├─principle
   │  │  │  │  └─use-norms
-  │  │  │  ├─spi
   │  │  │  ├─test-engine
   │  │  │  └─transaction
   │  │  │      ├─concept
   │  │  │      ├─function
-  │  │  │      └─principle
-  │  │  ├─manual
-  │  │  │  ├─sharding-jdbc
+  │  │  │      └─use-norms
+  │  │  ├─user-manual
+  │  │  │  ├─shardingsphere-jdbc
   │  │  │  │  ├─configuration
   │  │  │  │  └─usage
-  │  │  │  ├─sharding-proxy
-  │  │  │  ├─sharding-sidecar
-  │  │  │  └─sharding-ui
+  │  │  │  ├─shardingsphere-proxy
+  │  │  │  ├─shardingsphere-scaling
+  │  │  │  ├─shardingsphere-sidecar
+  │  │  │  └─shardingsphere-ui
   │  │  ├─overview
   │  │  └─quick-start
   │  ├─i18n
@@ -106,6 +111,6 @@ ShardingSphere文档使用Markdown编写，并使用Hugo进行处理生成html�
 
 ## 约定
 
-- 非特别说明，请使用Hugo的`0.37.1`版本
+- 非特别说明，请使用Hugo的`0.70.0`版本
 
 - asf-site分支由官方定期更新，您无需向asf-site提交pull request

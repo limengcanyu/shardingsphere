@@ -27,13 +27,13 @@ import org.apache.shardingsphere.sql.parser.binder.segment.select.projection.Pro
 import org.apache.shardingsphere.sql.parser.binder.segment.select.projection.ProjectionsContext;
 import org.apache.shardingsphere.sql.parser.binder.segment.select.projection.impl.DerivedProjection;
 import org.apache.shardingsphere.sql.parser.binder.segment.select.projection.impl.ShorthandProjection;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.item.ProjectionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.item.ProjectionsSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.order.item.ColumnOrderByItemSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.order.item.IndexOrderByItemSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.order.item.OrderByItemSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.order.item.TextOrderByItemSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ProjectionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ProjectionsSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.ColumnOrderByItemSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.IndexOrderByItemSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.OrderByItemSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.TextOrderByItemSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -56,26 +56,25 @@ public final class ProjectionsContextEngine {
     /**
      * Create projections context.
      *
-     * @param sql SQL
      * @param tables tables
      * @param projectionsSegment projection Segments
      * @param groupByContext group by context
      * @param orderByContext order by context
      * @return projections context
      */
-    public ProjectionsContext createProjectionsContext(final String sql, final Collection<SimpleTableSegment> tables, final ProjectionsSegment projectionsSegment,
+    public ProjectionsContext createProjectionsContext(final Collection<SimpleTableSegment> tables, final ProjectionsSegment projectionsSegment,
                                                        final GroupByContext groupByContext, final OrderByContext orderByContext) {
-        Collection<Projection> projections = getProjections(sql, tables, projectionsSegment);
+        Collection<Projection> projections = getProjections(tables, projectionsSegment);
         ProjectionsContext result = new ProjectionsContext(projectionsSegment.getStartIndex(), projectionsSegment.getStopIndex(), projectionsSegment.isDistinctRow(), projections);
         result.getProjections().addAll(getDerivedGroupByColumns(projections, groupByContext, tables));
         result.getProjections().addAll(getDerivedOrderByColumns(projections, orderByContext, tables));
         return result;
     }
     
-    private Collection<Projection> getProjections(final String sql, final Collection<SimpleTableSegment> tableSegments, final ProjectionsSegment projectionsSegment) {
+    private Collection<Projection> getProjections(final Collection<SimpleTableSegment> tableSegments, final ProjectionsSegment projectionsSegment) {
         Collection<Projection> result = new LinkedList<>();
         for (ProjectionSegment each : projectionsSegment.getProjections()) {
-            projectionEngine.createProjection(sql, tableSegments, each).ifPresent(result::add);
+            projectionEngine.createProjection(tableSegments, each).ifPresent(result::add);
         }
         return result;
     }

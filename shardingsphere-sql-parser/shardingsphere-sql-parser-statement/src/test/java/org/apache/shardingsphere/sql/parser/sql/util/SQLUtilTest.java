@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.sql.parser.sql.util;
 
+import org.apache.shardingsphere.sql.parser.sql.common.util.SQLUtil;
 import org.junit.Test;
 
 import java.math.BigDecimal;
@@ -88,5 +89,6 @@ public final class SQLUtilTest {
     @Test
     public void assertGetExpressionWithoutOutsideParentheses() {
         assertThat(SQLUtil.getExpressionWithoutOutsideParentheses("((a + b*c))"), is("a + b*c"));
+        assertThat(SQLUtil.getExpressionWithoutOutsideParentheses(""), is(""));
     }
 }

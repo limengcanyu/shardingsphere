@@ -29,12 +29,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class TableMetaDataTest {
+public final class TableMetaDataTest {
     
     private TableMetaData tableMetaData;
     
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         tableMetaData = new TableMetaData(Collections.singletonList(new ColumnMetaData("test", Types.INTEGER, "INT", true, false, true)), Collections.emptyList());
     }
     

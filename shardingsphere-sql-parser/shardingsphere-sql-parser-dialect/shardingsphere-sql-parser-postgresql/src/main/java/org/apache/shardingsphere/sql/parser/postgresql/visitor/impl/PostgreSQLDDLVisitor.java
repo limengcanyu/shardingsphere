@@ -19,6 +19,9 @@ package org.apache.shardingsphere.sql.parser.postgresql.visitor.impl;
 
 import org.apache.shardingsphere.sql.parser.api.ASTNode;
 import org.apache.shardingsphere.sql.parser.api.visitor.statement.DDLVisitor;
+import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.CreateFunctionContext;
+import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.AlterProcedureContext;
+import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.AlterFunctionContext;
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.AddColumnSpecificationContext;
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.AlterDefinitionClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.AlterIndexContext;
@@ -42,25 +45,29 @@ import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.Ta
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.TableNamesClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.TruncateTableContext;
 import org.apache.shardingsphere.sql.parser.postgresql.visitor.PostgreSQLVisitor;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.AlterDefinitionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.CreateDefinitionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.column.ColumnDefinitionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.column.alter.AddColumnDefinitionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.column.alter.DropColumnDefinitionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.column.alter.ModifyColumnDefinitionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.column.alter.RenameColumnSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.constraint.ConstraintDefinitionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.index.IndexSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.column.ColumnSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.generic.DataTypeSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.generic.table.SimpleTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.statement.ddl.AlterTableStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.ddl.CreateIndexStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.ddl.CreateTableStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.ddl.DropIndexStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.ddl.DropTableStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.ddl.TruncateStatement;
-import org.apache.shardingsphere.sql.parser.sql.value.collection.CollectionValue;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.AlterDefinitionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.CreateDefinitionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.ColumnDefinitionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.alter.AddColumnDefinitionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.alter.DropColumnDefinitionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.alter.ModifyColumnDefinitionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.alter.RenameColumnSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.constraint.ConstraintDefinitionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.index.IndexSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.DataTypeSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterFunctionStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterIndexStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterProcedureStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterTableStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateFunctionStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateIndexStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateTableStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropIndexStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropTableStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.TruncateStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.value.collection.CollectionValue;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -126,7 +133,6 @@ public final class PostgreSQLDDLVisitor extends PostgreSQLVisitor implements DDL
     @Override
     public ASTNode visitAlterDefinitionClause(final AlterDefinitionClauseContext ctx) {
         CollectionValue<AlterDefinitionSegment> result = new CollectionValue<>();
-        
         if (null != ctx.alterTableActions()) {
             for (AlterTableActionContext each : ctx.alterTableActions().alterTableAction()) {
                 AddColumnSpecificationContext addColumnSpecification = each.addColumnSpecification();
@@ -207,14 +213,12 @@ public final class PostgreSQLDDLVisitor extends PostgreSQLVisitor implements DDL
     
     @Override
     public ASTNode visitDropColumnSpecification(final DropColumnSpecificationContext ctx) {
-        return new DropColumnDefinitionSegment(
-                ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), Collections.singletonList((ColumnSegment) visit(ctx.columnName())));
+        return new DropColumnDefinitionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), Collections.singletonList((ColumnSegment) visit(ctx.columnName())));
     }
     
     @Override
     public ASTNode visitRenameColumnSpecification(final RenameColumnSpecificationContext ctx) {
-        return new RenameColumnSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(),
-                (ColumnSegment) visit(ctx.columnName(0)), (ColumnSegment) visit(ctx.columnName(1)));
+        return new RenameColumnSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), (ColumnSegment) visit(ctx.columnName(0)), (ColumnSegment) visit(ctx.columnName(1)));
     }
     
     @SuppressWarnings("unchecked")
@@ -245,7 +249,7 @@ public final class PostgreSQLDDLVisitor extends PostgreSQLVisitor implements DDL
     
     @Override
     public ASTNode visitAlterIndex(final AlterIndexContext ctx) {
-        CreateIndexStatement result = new CreateIndexStatement();
+        AlterIndexStatement result = new AlterIndexStatement();
         result.setIndex((IndexSegment) visit(ctx.indexName()));
         return result;
     }
@@ -281,5 +285,20 @@ public final class PostgreSQLDDLVisitor extends PostgreSQLVisitor implements DDL
         CollectionValue<SimpleTableSegment> result = new CollectionValue<>();
         result.getValue().addAll(tableSegments);
         return result;
+    }
+    
+    @Override
+    public ASTNode visitAlterFunction(final AlterFunctionContext ctx) {
+        return new AlterFunctionStatement();
+    }
+    
+    @Override
+    public ASTNode visitAlterProcedure(final AlterProcedureContext ctx) {
+        return new AlterProcedureStatement();
+    }
+    
+    @Override
+    public ASTNode visitCreateFunction(final CreateFunctionContext ctx) {
+        return new CreateFunctionStatement();
     }
 }

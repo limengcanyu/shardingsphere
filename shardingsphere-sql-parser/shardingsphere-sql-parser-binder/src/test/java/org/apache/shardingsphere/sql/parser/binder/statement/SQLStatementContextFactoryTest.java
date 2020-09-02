@@ -21,16 +21,16 @@ import org.apache.shardingsphere.sql.parser.binder.SQLStatementContextFactory;
 import org.apache.shardingsphere.sql.parser.binder.metadata.schema.SchemaMetaData;
 import org.apache.shardingsphere.sql.parser.binder.statement.dml.InsertStatementContext;
 import org.apache.shardingsphere.sql.parser.binder.statement.dml.SelectStatementContext;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.assignment.AssignmentSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.assignment.SetAssignmentSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.column.ColumnSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.item.ProjectionsSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.pagination.limit.LimitSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.generic.table.SimpleTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.statement.SQLStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.dml.InsertStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.dml.SelectStatement;
-import org.apache.shardingsphere.sql.parser.sql.value.identifier.IdentifierValue;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.AssignmentSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.SetAssignmentSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ProjectionsSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.pagination.limit.LimitSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.InsertStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -47,7 +47,7 @@ public final class SQLStatementContextFactoryTest {
         SelectStatement selectStatement = new SelectStatement();
         selectStatement.setLimit(new LimitSegment(0, 10, null, null));
         selectStatement.setProjections(projectionsSegment);
-        SQLStatementContext sqlStatementContext = SQLStatementContextFactory.newInstance(mock(SchemaMetaData.class), null, null, selectStatement);
+        SQLStatementContext sqlStatementContext = SQLStatementContextFactory.newInstance(mock(SchemaMetaData.class), null, selectStatement);
         assertNotNull(sqlStatementContext);
         assertTrue(sqlStatementContext instanceof SelectStatementContext);
     }
@@ -58,14 +58,14 @@ public final class SQLStatementContextFactoryTest {
         insertStatement.setSetAssignment(new SetAssignmentSegment(0, 0,
                 Collections.singleton(new AssignmentSegment(0, 0, new ColumnSegment(0, 0, new IdentifierValue("IdentifierValue")), null))));
         insertStatement.setTable(new SimpleTableSegment(0, 0, new IdentifierValue("tbl")));
-        SQLStatementContext sqlStatementContext = SQLStatementContextFactory.newInstance(mock(SchemaMetaData.class), null, null, insertStatement);
+        SQLStatementContext sqlStatementContext = SQLStatementContextFactory.newInstance(mock(SchemaMetaData.class), null, insertStatement);
         assertNotNull(sqlStatementContext);
         assertTrue(sqlStatementContext instanceof InsertStatementContext);
     }
     
     @Test
     public void assertSQLStatementContextCreatedWhenSQLStatementNotInstanceOfSelectStatementAndInsertStatement() {
-        SQLStatementContext sqlStatementContext = SQLStatementContextFactory.newInstance(mock(SchemaMetaData.class), null, null, mock(SQLStatement.class));
+        SQLStatementContext sqlStatementContext = SQLStatementContextFactory.newInstance(mock(SchemaMetaData.class), null, mock(SQLStatement.class));
         assertNotNull(sqlStatementContext);
         assertTrue(sqlStatementContext instanceof CommonSQLStatementContext);
     }

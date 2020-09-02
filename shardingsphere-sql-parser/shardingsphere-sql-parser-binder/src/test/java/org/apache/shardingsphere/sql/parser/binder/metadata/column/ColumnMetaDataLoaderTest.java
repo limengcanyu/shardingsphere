@@ -39,7 +39,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ColumnMetaDataLoaderTest {
+public final class ColumnMetaDataLoaderTest {
     
     private static final String TEST_CATALOG = "catalog";
     
@@ -50,9 +50,6 @@ public class ColumnMetaDataLoaderTest {
     
     @Mock
     private DatabaseMetaData databaseMetaData;
-    
-    @Mock
-    private ResultSet tableExistResultSet;
     
     @Mock
     private ResultSet primaryResultSet;
@@ -73,8 +70,6 @@ public class ColumnMetaDataLoaderTest {
     public void setUp() throws SQLException {
         when(connection.getCatalog()).thenReturn(TEST_CATALOG);
         when(connection.getMetaData()).thenReturn(databaseMetaData);
-        when(databaseMetaData.getTables(TEST_CATALOG, null, TEST_TABLE, null)).thenReturn(tableExistResultSet);
-        when(tableExistResultSet.next()).thenReturn(true);
         when(databaseMetaData.getPrimaryKeys(TEST_CATALOG, null, TEST_TABLE)).thenReturn(primaryResultSet);
         when(primaryResultSet.next()).thenReturn(true, false);
         when(primaryResultSet.getString("COLUMN_NAME")).thenReturn("pk_col");

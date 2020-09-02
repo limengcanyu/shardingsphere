@@ -36,7 +36,7 @@ Horizontal sharding is also called transverse sharding. Compared with the catego
 
 ![Horizontal Sharding](https://shardingsphere.apache.org/document/current/img/sharding/horizontal_sharding.png)
 
-Theoretically, horizontal sharding has overcame the limitation of data processing volume in single machine and can be extended relatively freely, so it can be taken as a standard solution to database sharding and table sharding.
+Theoretically, horizontal sharding has overcome the limitation of data processing volume in single machine and can be extended relatively freely, so it can be taken as a standard solution to database sharding and table sharding.
 
 ## Challenges
 
@@ -51,4 +51,4 @@ Troubles brought by distributed transactions can be avoided by the wise use of d
 
 ## Goal
 
-**The main design goal of the data sharding modular of ShardingSphere is to try to reduce the influence of sharding, in order to let users use horizontal sharding database group like one database.**
+**The main design goal of the data sharding modular of Apache ShardingSphere is to try to reduce the influence of sharding, in order to let users use horizontal sharding database group like one database.**

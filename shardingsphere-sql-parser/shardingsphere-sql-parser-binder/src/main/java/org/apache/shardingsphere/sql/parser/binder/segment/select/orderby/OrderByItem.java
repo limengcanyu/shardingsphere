@@ -21,7 +21,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.order.item.OrderByItemSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.OrderByItemSegment;
 
 /**
  * Order by item.
@@ -38,10 +38,10 @@ public final class OrderByItem {
     
     @Override
     public boolean equals(final Object obj) {
-        if (null == obj || !(obj instanceof OrderByItem)) {
+        if (!(obj instanceof OrderByItem)) {
             return false;
         }
         OrderByItem orderByItem = (OrderByItem) obj;
-        return segment.getOrderDirection() == orderByItem.getSegment().getOrderDirection() && index == orderByItem.getIndex();
+        return segment.getOrderDirection() == orderByItem.segment.getOrderDirection() && index == orderByItem.index;
     }
 }

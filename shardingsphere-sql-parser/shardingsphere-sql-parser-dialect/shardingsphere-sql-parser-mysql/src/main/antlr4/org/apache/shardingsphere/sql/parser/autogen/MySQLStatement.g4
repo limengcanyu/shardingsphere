@@ -30,10 +30,28 @@ execute
     | repairTable
     | renameTableSpecification
     | dropTable
-    | dropDatabase
     | truncateTable
     | createIndex
     | dropIndex
+    | createProcedure
+    | alterProcedure
+    | dropProcedure
+    | createFunction
+    | alterFunction
+    | dropFunction
+    | createDatabase
+    | alterDatabase
+    | dropDatabase
+    | createEvent
+    | alterEvent
+    | dropEvent
+    | alterInstance
+    | createLogfileGroup
+    | alterLogfileGroup
+    | dropLogfileGroup
+    | createServer
+    | alterServer
+    | dropServer
     | setTransaction
     | beginTransaction
     | setAutoCommit
@@ -52,7 +70,7 @@ execute
     | setRole
     | setPassword
     | use
-    | desc
+    | explain
     | showDatabases
     | showTables
     | showTableStatus
@@ -61,6 +79,8 @@ execute
     | showCreateTable
     | showOther
     | setVariable
+    | setName
+    | setCharacter
     | call
     | changeMasterTo
     | startSlave

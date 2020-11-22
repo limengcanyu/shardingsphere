@@ -24,15 +24,14 @@
         <version>5.0.0-RC1-SNAPSHOT</version>
     </parent>
     <artifactId>shardingsphere-governance-core</artifactId>
-    <name>${project.artifactId}</name>
     <packaging>pom</packaging>
+    <name>${project.artifactId}</name>
     
     <modules>
         <module>shardingsphere-governance-core-common</module>
         <module>shardingsphere-governance-core-config</module>
         <module>shardingsphere-governance-core-registry</module>
-        <module>shardingsphere-governance-core-metadata</module>
-        <module>shardingsphere-governance-core-schema</module>
+        <module>shardingsphere-governance-core-context</module>
         <module>shardingsphere-governance-core-facade</module>
     </modules>
 </project>

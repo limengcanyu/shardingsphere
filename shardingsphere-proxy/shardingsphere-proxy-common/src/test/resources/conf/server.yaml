@@ -26,8 +26,8 @@ authentication:
   users:
     root:
       password: root
-      authorizedSchemas: sharding_db,master_slave_db
+      authorizedSchemas: sharding_db,replica_query_db
 
 props:
-  max.connections.size.per.query: 1
-  sql.show: false
+  max-connections-size-per-query: 1
+  sql-show: false

@@ -23,7 +23,19 @@
         </encoder>
     </appender>
     <logger name="org.apache.shardingsphere" level="info" additivity="false">
-        <appender-ref ref="console"/>
+        <appender-ref ref="console" />
+    </logger>
+    
+    <logger name="com.zaxxer.hikari" level="error">
+        <appender-ref ref="console" />
+    </logger>
+    
+    <logger name="com.atomikos" level="error">
+        <appender-ref ref="console" />
+    </logger>
+    
+    <logger name="io.netty" level="error">
+        <appender-ref ref="console" />
     </logger>
     
     <root>

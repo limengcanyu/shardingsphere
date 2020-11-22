@@ -23,6 +23,8 @@ import com.google.common.collect.Range;
 import com.google.common.math.LongMath;
 
 import java.math.RoundingMode;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
 
@@ -31,11 +33,11 @@ import java.util.Properties;
  */
 public final class VolumeBasedRangeShardingAlgorithm extends AbstractRangeShardingAlgorithm {
     
-    private static final String RANGE_LOWER_KEY = "range.lower";
+    private static final String RANGE_LOWER_KEY = "range-lower";
     
-    private static final String RANGE_UPPER_KEY = "range.upper";
+    private static final String RANGE_UPPER_KEY = "range-upper";
     
-    private static final String SHARDING_VOLUME_KEY = "sharding.volume";
+    private static final String SHARDING_VOLUME_KEY = "sharding-volume";
     
     @Override
     public Map<Integer, Range<Long>> calculatePartitionRange(final Properties props) {
@@ -59,5 +61,10 @@ public final class VolumeBasedRangeShardingAlgorithm extends AbstractRangeShardi
     @Override
     public String getType() {
         return "VOLUME_RANGE";
+    }
+    
+    @Override
+    public Collection<String> getAllPropertyKeys() {
+        return Arrays.asList(RANGE_LOWER_KEY, RANGE_UPPER_KEY, SHARDING_VOLUME_KEY);
     }
 }

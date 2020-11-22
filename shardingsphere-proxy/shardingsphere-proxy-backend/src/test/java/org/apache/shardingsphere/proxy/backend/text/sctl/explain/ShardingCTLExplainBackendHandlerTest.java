@@ -1,29 +1,34 @@
 package org.apache.shardingsphere.proxy.backend.text.sctl.explain;
 
-import lombok.SneakyThrows;
 import org.apache.shardingsphere.infra.auth.Authentication;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
-import org.apache.shardingsphere.infra.context.SchemaContext;
-import org.apache.shardingsphere.infra.context.impl.StandardSchemaContexts;
-import org.apache.shardingsphere.infra.context.runtime.RuntimeContext;
-import org.apache.shardingsphere.infra.context.schema.ShardingSphereSchema;
+import org.apache.shardingsphere.infra.context.metadata.impl.StandardMetaDataContexts;
 import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
+import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
+import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
+import org.apache.shardingsphere.infra.metadata.resource.CachedDatabaseMetaData;
+import org.apache.shardingsphere.infra.metadata.resource.DataSourcesMetaData;
+import org.apache.shardingsphere.infra.metadata.resource.ShardingSphereResource;
+import org.apache.shardingsphere.infra.metadata.rule.ShardingSphereRuleMetaData;
+import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
+import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
-import org.apache.shardingsphere.proxy.backend.schema.ProxySchemaContexts;
-import org.apache.shardingsphere.rdl.parser.engine.ShardingSphereSQLParserEngine;
-import org.apache.shardingsphere.sql.parser.engine.StandardSQLParserEngine;
+import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.junit.Before;
 import org.junit.Test;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -49,28 +54,30 @@ public final class ShardingCTLExplainBackendHandlerTest {
     private ShardingCTLExplainBackendHandler handler;
     
     @Before
-    @SneakyThrows(ReflectiveOperationException.class)
-    public void setUp() {
+    public void setUp() throws IllegalAccessException, NoSuchFieldException {
         BackendConnection connection = mock(BackendConnection.class);
-        when(connection.getSchema()).thenReturn("schema");
+        when(connection.getSchemaName()).thenReturn("schema");
         handler = new ShardingCTLExplainBackendHandler("sctl:explain select 1", connection);
-        Field schemaContexts = ProxySchemaContexts.getInstance().getClass().getDeclaredField("schemaContexts");
-        schemaContexts.setAccessible(true);
-        schemaContexts.set(ProxySchemaContexts.getInstance(),
-                new StandardSchemaContexts(getSchemaContextMap(), new Authentication(), new ConfigurationProperties(new Properties()), new MySQLDatabaseType()));
+        Field metaDataContexts = ProxyContext.getInstance().getClass().getDeclaredField("metaDataContexts");
+        metaDataContexts.setAccessible(true);
+        metaDataContexts.set(ProxyContext.getInstance(), 
+                new StandardMetaDataContexts(getMetaDataMap(), mock(ExecutorEngine.class), new Authentication(), new ConfigurationProperties(new Properties()), new MySQLDatabaseType()));
     }
     
-    private Map<String, SchemaContext> getSchemaContextMap() {
-        RuntimeContext runtimeContext = new RuntimeContext(null, null, new ShardingSphereSQLParserEngine(new StandardSQLParserEngine("MySQL")));
-        ShardingSphereSchema schema = new ShardingSphereSchema(Collections.emptyList(),
-                Collections.emptyList(), Collections.singletonMap("ds0", mock(DataSource.class)), null);
-        return Collections.singletonMap("schema", new SchemaContext("schema", schema, runtimeContext));
+    private Map<String, ShardingSphereMetaData> getMetaDataMap() {
+        ShardingSphereResource resource = new ShardingSphereResource(
+                Collections.singletonMap("ds0", mock(DataSource.class)), mock(DataSourcesMetaData.class, RETURNS_DEEP_STUBS), mock(CachedDatabaseMetaData.class));
+        ShardingSphereMetaData metaData = new ShardingSphereMetaData("schema", 
+                resource, new ShardingSphereRuleMetaData(Collections.emptyList(), Collections.singleton(mock(ShardingSphereRule.class))), mock(ShardingSphereSchema.class));
+        return Collections.singletonMap("schema", metaData);
     }
     
     @Test
-    public void assertQueryData() {
+    public void assertGetRowData() {
         handler.execute();
         assertTrue(handler.next());
-        assertThat(handler.getQueryData().getData().get(1), is("select 1"));
+        Iterator<Object> iterator = handler.getRowData().iterator();
+        assertNull(iterator.next());
+        assertThat(iterator.next(), is("select 1"));
     }
 }

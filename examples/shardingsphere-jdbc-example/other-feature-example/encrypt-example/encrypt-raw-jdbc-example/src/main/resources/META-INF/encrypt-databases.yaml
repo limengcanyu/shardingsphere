@@ -39,9 +39,9 @@ rules:
     name_encryptor:
       type: AES
       props:
-        aes.key.value: 123456
+        aes-key-value: 123456abc
     pwd_encryptor:
       type: assistedTest
 
 props:
-  query.with.cipher.column: true
+  query-with-cipher-column: true

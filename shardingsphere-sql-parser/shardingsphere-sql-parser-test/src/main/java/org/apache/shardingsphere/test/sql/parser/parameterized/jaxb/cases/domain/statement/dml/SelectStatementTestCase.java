@@ -19,17 +19,15 @@ package org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domai
 
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain.segment.impl.ExpectedTableReference;
 import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain.segment.impl.limit.ExpectedLimitClause;
+import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain.segment.impl.lock.ExpectedLockClause;
 import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain.segment.impl.orderby.ExpectedOrderByClause;
 import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain.segment.impl.predicate.ExpectedWhereClause;
 import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain.segment.impl.projection.ExpectedProjections;
-import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain.segment.impl.table.ExpectedTables;
+import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain.segment.impl.table.ExpectedTable;
 import org.apache.shardingsphere.test.sql.parser.parameterized.jaxb.cases.domain.statement.SQLParserTestCase;
 
-import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
-import java.util.List;
 
 /**
  * Select statement test case.
@@ -38,15 +36,9 @@ import java.util.List;
 @Setter
 public final class SelectStatementTestCase extends SQLParserTestCase {
     
-    @XmlAttribute(name = "lock-clause")
-    private boolean lockClause;
-    
-    @XmlElement(name = "table-reference")
-    private List<ExpectedTableReference> tableReferences;
-    
-    @XmlElement(name = "tables")
-    private final ExpectedTables tables = new ExpectedTables();
-    
+    @XmlElement(name = "from")
+    private ExpectedTable from;
+
     @XmlElement(name = "projections")
     private final ExpectedProjections projections = new ExpectedProjections();
     
@@ -61,4 +53,7 @@ public final class SelectStatementTestCase extends SQLParserTestCase {
     
     @XmlElement(name = "limit")
     private ExpectedLimitClause limitClause;
+
+    @XmlElement(name = "lock")
+    private ExpectedLockClause lockClause;
 }

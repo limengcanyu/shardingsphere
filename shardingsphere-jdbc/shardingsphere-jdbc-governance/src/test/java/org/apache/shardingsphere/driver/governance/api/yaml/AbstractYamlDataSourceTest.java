@@ -51,13 +51,13 @@ public abstract class AbstractYamlDataSourceTest {
         return result;
     }
     
-    protected byte[] getYamlBytes(final File yamlFile) throws IOException {
+    protected final byte[] getYamlBytes(final File yamlFile) throws IOException {
         try (FileInputStream fis = new FileInputStream(yamlFile);
              ByteArrayOutputStream bos = new ByteArrayOutputStream(1000)) {
-            byte[] b = new byte[1000];
+            byte[] bytes = new byte[1000];
             int n;
-            while ((n = fis.read(b)) != -1) {
-                bos.write(b, 0, n);
+            while ((n = fis.read(bytes)) != -1) {
+                bos.write(bytes, 0, n);
             }
             return bos.toByteArray();
         }
@@ -72,9 +72,14 @@ public abstract class AbstractYamlDataSourceTest {
     }
     
     private static List<String> getSchemaFiles() {
-        return Arrays.asList("yaml/schema/sharding/db0.sql", "yaml/schema/sharding/db1.sql",
-                "yaml/schema/ms/db_master.sql", "yaml/schema/ms/db_slave_0.sql", "yaml/schema/ms/db_slave_1.sql",
-                "yaml/schema/sharding_ms/db0_master.sql", "yaml/schema/sharding_ms/db1_master.sql",
-                "yaml/schema/sharding_ms/db0_slave.sql", "yaml/schema/sharding_ms/db1_slave.sql");
+        return Arrays.asList("yaml/schema/sharding/db0.sql", 
+                "yaml/schema/sharding/db1.sql",
+                "yaml/schema/replica_query/primary_ds.sql",
+                "yaml/schema/replica_query/replica_ds_0.sql",
+                "yaml/schema/replica_query/replica_ds_1.sql",
+                "yaml/schema/sharding_replica_query/primary_ds_0.sql",
+                "yaml/schema/sharding_replica_query/primary_ds_1.sql",
+                "yaml/schema/sharding_replica_query/replica_ds_0.sql",
+                "yaml/schema/sharding_replica_query/replica_ds_1.sql");
     }
 }

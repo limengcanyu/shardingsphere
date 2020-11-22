@@ -15,16 +15,6 @@
 # limitations under the License.
 #
 
-######################################################################################################
-# 
-# Here you can configure the rules for the proxy.
-# This example is configuration of sharding rule.
-#   
-# If you want to use sharding, please refer to this file; 
-# if you want to use master-slave, please refer to the config-master_slave.yaml.
-# 
-######################################################################################################
-#
 #schemaName: sharding_db
 #
 #dataSources:
@@ -79,15 +69,15 @@
 #    database_inline:
 #      type: INLINE
 #      props:
-#        algorithm.expression: ds_${user_id % 2}
+#        algorithm-expression: ds_${user_id % 2}
 #    t_order_inline:
 #      type: INLINE
 #      props:
-#        algorithm.expression: t_order_${order_id % 2}
+#        algorithm-expression: t_order_${order_id % 2}
 #    t_order_item_inline:
 #      type: INLINE
 #      props:
-#        algorithm.expression: t_order_item_${order_id % 2}
+#        algorithm-expression: t_order_item_${order_id % 2}
 #  
 #  keyGenerators:
 #      snowflake:
@@ -103,37 +93,107 @@
 
 schemaName: proxy_db
 
-dataSourceCommon:
-  username: root
-  password:
-  connectionTimeoutMilliseconds: 30000
-  idleTimeoutMilliseconds: 60000
-  maxLifetimeMilliseconds: 1800000
-  maxPoolSize: 2
-  minPoolSize: 2
-  maintenanceIntervalMilliseconds: 30000
-
 dataSources:
   ds_0:
     url: jdbc:mysql://db.mysql:3306/db_0?serverTimezone=UTC&useSSL=false
+    username: root
+    password:
+    connectionTimeoutMilliseconds: 30000
+    idleTimeoutMilliseconds: 60000
+    maxLifetimeMilliseconds: 1800000
+    maxPoolSize: 2
+    minPoolSize: 2
+    maintenanceIntervalMilliseconds: 30000
   ds_1:
     url: jdbc:mysql://db.mysql:3306/db_1?serverTimezone=UTC&useSSL=false
+    username: root
+    password:
+    connectionTimeoutMilliseconds: 30000
+    idleTimeoutMilliseconds: 60000
+    maxLifetimeMilliseconds: 1800000
+    maxPoolSize: 2
+    minPoolSize: 2
+    maintenanceIntervalMilliseconds: 30000
   ds_2:
     url: jdbc:mysql://db.mysql:3306/db_2?serverTimezone=UTC&useSSL=false
+    username: root
+    password:
+    connectionTimeoutMilliseconds: 30000
+    idleTimeoutMilliseconds: 60000
+    maxLifetimeMilliseconds: 1800000
+    maxPoolSize: 2
+    minPoolSize: 2
+    maintenanceIntervalMilliseconds: 30000
   ds_3:
     url: jdbc:mysql://db.mysql:3306/db_3?serverTimezone=UTC&useSSL=false
+    username: root
+    password:
+    connectionTimeoutMilliseconds: 30000
+    idleTimeoutMilliseconds: 60000
+    maxLifetimeMilliseconds: 1800000
+    maxPoolSize: 2
+    minPoolSize: 2
+    maintenanceIntervalMilliseconds: 30000
   ds_4:
     url: jdbc:mysql://db.mysql:3306/db_4?serverTimezone=UTC&useSSL=false
+    username: root
+    password:
+    connectionTimeoutMilliseconds: 30000
+    idleTimeoutMilliseconds: 60000
+    maxLifetimeMilliseconds: 1800000
+    maxPoolSize: 2
+    minPoolSize: 2
+    maintenanceIntervalMilliseconds: 30000
   ds_5:
     url: jdbc:mysql://db.mysql:3306/db_5?serverTimezone=UTC&useSSL=false
+    username: root
+    password:
+    connectionTimeoutMilliseconds: 30000
+    idleTimeoutMilliseconds: 60000
+    maxLifetimeMilliseconds: 1800000
+    maxPoolSize: 2
+    minPoolSize: 2
+    maintenanceIntervalMilliseconds: 30000
   ds_6:
     url: jdbc:mysql://db.mysql:3306/db_6?serverTimezone=UTC&useSSL=false
+    username: root
+    password:
+    connectionTimeoutMilliseconds: 30000
+    idleTimeoutMilliseconds: 60000
+    maxLifetimeMilliseconds: 1800000
+    maxPoolSize: 2
+    minPoolSize: 2
+    maintenanceIntervalMilliseconds: 30000
   ds_7:
     url: jdbc:mysql://db.mysql:3306/db_7?serverTimezone=UTC&useSSL=false
+    username: root
+    password:
+    connectionTimeoutMilliseconds: 30000
+    idleTimeoutMilliseconds: 60000
+    maxLifetimeMilliseconds: 1800000
+    maxPoolSize: 2
+    minPoolSize: 2
+    maintenanceIntervalMilliseconds: 30000
   ds_8:
     url: jdbc:mysql://db.mysql:3306/db_8?serverTimezone=UTC&useSSL=false
+    username: root
+    password:
+    connectionTimeoutMilliseconds: 30000
+    idleTimeoutMilliseconds: 60000
+    maxLifetimeMilliseconds: 1800000
+    maxPoolSize: 2
+    minPoolSize: 2
+    maintenanceIntervalMilliseconds: 30000
   ds_9:
     url: jdbc:mysql://db.mysql:3306/db_9?serverTimezone=UTC&useSSL=false
+    username: root
+    password:
+    connectionTimeoutMilliseconds: 30000
+    idleTimeoutMilliseconds: 60000
+    maxLifetimeMilliseconds: 1800000
+    maxPoolSize: 2
+    minPoolSize: 2
+    maintenanceIntervalMilliseconds: 30000
 
 rules:
 - !SHARDING
@@ -163,3 +223,4 @@ rules:
   keyGenerators:
       constant:
         type: CONSTANT
+        

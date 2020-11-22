@@ -17,18 +17,16 @@
 
 package org.apache.shardingsphere.governance.core.facade;
 
-import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import org.apache.shardingsphere.infra.auth.Authentication;
-import org.apache.shardingsphere.infra.config.datasource.DataSourceConfiguration;
-import org.apache.shardingsphere.infra.config.RuleConfiguration;
 import org.apache.shardingsphere.governance.core.config.ConfigCenter;
 import org.apache.shardingsphere.governance.core.facade.listener.GovernanceListenerManager;
 import org.apache.shardingsphere.governance.core.facade.repository.GovernanceRepositoryFacade;
-import org.apache.shardingsphere.governance.core.metadata.MetaDataCenter;
 import org.apache.shardingsphere.governance.core.registry.RegistryCenter;
+import org.apache.shardingsphere.governance.core.state.GovernedStateMachine;
 import org.apache.shardingsphere.governance.repository.api.config.GovernanceConfiguration;
+import org.apache.shardingsphere.infra.auth.Authentication;
+import org.apache.shardingsphere.infra.config.RuleConfiguration;
+import org.apache.shardingsphere.infra.config.datasource.DataSourceConfiguration;
 
 import java.util.Collection;
 import java.util.Map;
@@ -50,9 +48,6 @@ public final class GovernanceFacade implements AutoCloseable {
     @Getter
     private RegistryCenter registryCenter;
     
-    @Getter
-    private MetaDataCenter metaDataCenter;
-    
     private GovernanceListenerManager listenerManager;
     
     /**
@@ -66,9 +61,9 @@ public final class GovernanceFacade implements AutoCloseable {
         repositoryFacade = new GovernanceRepositoryFacade(config);
         registryCenter = new RegistryCenter(repositoryFacade.getRegistryRepository());
         configCenter = new ConfigCenter(repositoryFacade.getConfigurationRepository());
-        metaDataCenter = new MetaDataCenter(repositoryFacade.getConfigurationRepository());
         listenerManager = new GovernanceListenerManager(repositoryFacade.getRegistryRepository(),
                 repositoryFacade.getConfigurationRepository(), schemaNames.isEmpty() ? configCenter.getAllSchemaNames() : schemaNames);
+        GovernedStateMachine.startUp();
     }
     
     /**
@@ -93,27 +88,24 @@ public final class GovernanceFacade implements AutoCloseable {
      */
     public void onlineInstance() {
         registryCenter.persistInstanceOnline();
-        registryCenter.persistDataSourcesNode();
+        registryCenter.persistDataNodes();
         listenerManager.init();
+    }
+    
+    /**
+     * Update configurations.
+     *
+     * @param dataSourceConfigMap schema data source configuration map
+     * @param schemaRuleMap schema rule map
+     */
+    public void updateConfigurations(final Map<String, Map<String, DataSourceConfiguration>> dataSourceConfigMap, final Map<String, Collection<RuleConfiguration>> schemaRuleMap) {
+        for (Entry<String, Map<String, DataSourceConfiguration>> entry : dataSourceConfigMap.entrySet()) {
+            configCenter.persistConfigurations(entry.getKey(), dataSourceConfigMap.get(entry.getKey()), schemaRuleMap.get(entry.getKey()), true);
+        }
     }
     
     @Override
     public void close() {
         repositoryFacade.close();
-    }
-    
-    /**
-     * Get governance facade instance.
-     *
-     * @return governance facade instance
-     */
-    public static GovernanceFacade getInstance() {
-        return GovernanceFacadeHolder.INSTANCE;
-    }
-    
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    private static final class GovernanceFacadeHolder {
-        
-        public static final GovernanceFacade INSTANCE = new GovernanceFacade();
     }
 }

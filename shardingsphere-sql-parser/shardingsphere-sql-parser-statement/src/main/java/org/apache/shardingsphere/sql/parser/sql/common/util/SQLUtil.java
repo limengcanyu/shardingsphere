@@ -22,9 +22,35 @@ import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.sql.parser.sql.common.constant.Paren;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.JoinTableSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SubqueryTableSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dal.DALStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dal.SetStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dcl.DCLStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DDLStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.DMLStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.DeleteStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.InsertStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.UpdateStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLCacheIndexStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLChecksumTableStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLFlushStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLInstallPluginStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLKillStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLLoadIndexInfoStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLOptimizeTableStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLRepairTableStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLResetStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLUninstallPluginStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLUseStatement;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * SQL utility class.
@@ -102,5 +128,87 @@ public final class SQLUtil {
             result++;
         }
         return result;
+    }
+    
+    /**
+     * Get subquery from tableSegment.
+     *
+     * @param tableSegment TableSegment.
+     * @return exactly SubqueryTableSegment list.
+     */
+    public static List<SubqueryTableSegment> getSubqueryTableSegmentFromTableSegment(final TableSegment tableSegment) {
+        List<SubqueryTableSegment> result = new LinkedList<>();
+        if (tableSegment instanceof SubqueryTableSegment) {
+            result.add((SubqueryTableSegment) tableSegment);
+        }
+        if (tableSegment instanceof JoinTableSegment) {
+            result.addAll(getSubqueryTableSegmentFromJoinTableSegment((JoinTableSegment) tableSegment));
+        }
+        return result;
+    }
+    
+    private static List<SubqueryTableSegment> getSubqueryTableSegmentFromJoinTableSegment(final JoinTableSegment joinTableSegment) {
+        List<SubqueryTableSegment> result = new LinkedList<>();
+        if (joinTableSegment.getLeft() instanceof SubqueryTableSegment) {
+            result.add((SubqueryTableSegment) joinTableSegment.getLeft());
+        } else if (joinTableSegment.getLeft() instanceof JoinTableSegment) {
+            result.addAll(getSubqueryTableSegmentFromJoinTableSegment((JoinTableSegment) joinTableSegment.getLeft()));
+        }
+        if (joinTableSegment.getRight() instanceof SubqueryTableSegment) {
+            result.add((SubqueryTableSegment) joinTableSegment.getRight());
+        } else if (joinTableSegment.getRight() instanceof JoinTableSegment) {
+            result.addAll(getSubqueryTableSegmentFromJoinTableSegment((JoinTableSegment) joinTableSegment.getRight()));
+        }
+        return result;
+    }
+    
+    /**
+     * Determine whether SQL is read-only.
+     *
+     * @param sqlStatement SQL statement
+     * @return true if read-only, otherwise false
+     */
+    public static boolean isReadOnly(final SQLStatement sqlStatement) {
+        if (sqlStatement instanceof DMLStatement) {
+            return isReadOnly((DMLStatement) sqlStatement);
+        }
+        if (sqlStatement instanceof DALStatement) {
+            return isReadOnly((DALStatement) sqlStatement);
+        }
+        if (sqlStatement instanceof DDLStatement) {
+            return false;
+        }
+        if (sqlStatement instanceof DCLStatement) {
+            return false;
+        }
+        throw new UnsupportedOperationException(String.format("Unsupported SQL Type `%s`", sqlStatement.getClass().getSimpleName()));
+    }
+    
+    private static boolean isReadOnly(final DMLStatement sqlStatement) {
+        if (sqlStatement instanceof SelectStatement) {
+            return true;
+        }
+        if (sqlStatement instanceof UpdateStatement || sqlStatement instanceof DeleteStatement || sqlStatement instanceof InsertStatement) {
+            return false;
+        }
+        throw new UnsupportedOperationException(String.format("Unsupported SQL Type `%s`", sqlStatement.getClass().getSimpleName()));
+    }
+    
+    private static boolean isReadOnly(final DALStatement sqlStatement) {
+        if (sqlStatement instanceof SetStatement
+                | sqlStatement instanceof MySQLUseStatement
+                | sqlStatement instanceof MySQLUninstallPluginStatement
+                | sqlStatement instanceof MySQLResetStatement
+                | sqlStatement instanceof MySQLRepairTableStatement
+                | sqlStatement instanceof MySQLOptimizeTableStatement
+                | sqlStatement instanceof MySQLLoadIndexInfoStatement
+                | sqlStatement instanceof MySQLKillStatement
+                | sqlStatement instanceof MySQLInstallPluginStatement
+                | sqlStatement instanceof MySQLFlushStatement
+                | sqlStatement instanceof MySQLChecksumTableStatement
+                | sqlStatement instanceof MySQLCacheIndexStatement) {
+            return false;
+        }
+        return true;
     }
 }

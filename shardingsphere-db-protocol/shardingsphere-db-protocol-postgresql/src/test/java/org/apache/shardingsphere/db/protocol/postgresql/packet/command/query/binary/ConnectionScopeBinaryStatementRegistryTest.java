@@ -24,7 +24,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
-public class ConnectionScopeBinaryStatementRegistryTest {
+public final class ConnectionScopeBinaryStatementRegistryTest {
     
     @Test
     public void assertRegister() {
@@ -34,7 +34,7 @@ public class ConnectionScopeBinaryStatementRegistryTest {
         statementRegistry.register(statementId, sql, 1, null);
         PostgreSQLBinaryStatement binaryStatement = statementRegistry.getBinaryStatement(statementId);
         assertThat(binaryStatement.getSql(), is(sql));
-        assertThat(binaryStatement.getParametersCount(), is(1));
+        assertThat(binaryStatement.getParameterCount(), is(1));
     }
     
     @Test

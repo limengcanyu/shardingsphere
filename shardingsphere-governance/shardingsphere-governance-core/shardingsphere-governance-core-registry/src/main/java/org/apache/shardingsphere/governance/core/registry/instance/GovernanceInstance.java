@@ -18,7 +18,7 @@
 package org.apache.shardingsphere.governance.core.registry.instance;
 
 import com.google.common.base.Joiner;
-import org.apache.shardingsphere.governance.core.common.utils.IpUtils;
+import org.apache.shardingsphere.governance.core.utils.IpUtils;
 
 import java.lang.management.ManagementFactory;
 import java.util.UUID;
@@ -39,9 +39,9 @@ public final class GovernanceInstance {
     }
     
     /**
-     * Getter for instanceId.
+     * Getter for instance ID.
      *
-     * @return  instanceId
+     * @return  instance ID
      */
     public String getInstanceId() {
         return instanceId;

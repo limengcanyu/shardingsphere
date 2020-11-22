@@ -43,11 +43,6 @@ public enum LogicalOperator {
      * @return logical operator value
      */
     public static Optional<LogicalOperator> valueFrom(final String text) {
-        for (LogicalOperator each : values()) {
-            if (each.texts.contains(text)) {
-                return Optional.of(each);
-            }
-        }
-        return Optional.empty();
+        return Arrays.stream(values()).filter(each -> each.texts.contains(text)).findFirst();
     }
 }

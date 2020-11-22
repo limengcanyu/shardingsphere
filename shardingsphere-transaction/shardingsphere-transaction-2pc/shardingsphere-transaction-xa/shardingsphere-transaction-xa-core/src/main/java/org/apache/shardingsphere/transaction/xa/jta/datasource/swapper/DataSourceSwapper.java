@@ -111,8 +111,8 @@ public final class DataSourceSwapper {
     }
     
     @SneakyThrows(ReflectiveOperationException.class)
-    private void setProperties(final XADataSource xaDataSource, final Map<String, Object> databaseAccessConfiguration) {
-        for (Entry<String, Object> entry : databaseAccessConfiguration.entrySet()) {
+    private void setProperties(final XADataSource xaDataSource, final Map<String, Object> databaseAccessConfig) {
+        for (Entry<String, Object> entry : databaseAccessConfig.entrySet()) {
             Optional<Method> method = findSetterMethod(xaDataSource.getClass().getMethods(), entry.getKey());
             if (method.isPresent()) {
                 method.get().invoke(xaDataSource, entry.getValue());
@@ -122,9 +122,9 @@ public final class DataSourceSwapper {
     
     private Method findGetterMethod(final DataSource dataSource, final String propertyName) throws NoSuchMethodException {
         String getterMethodName = Joiner.on("").join(GETTER_PREFIX, CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, propertyName));
-        Method method = dataSource.getClass().getMethod(getterMethodName);
-        method.setAccessible(true);
-        return method;
+        Method result = dataSource.getClass().getMethod(getterMethodName);
+        result.setAccessible(true);
+        return result;
     }
     
     private Optional<Method> findSetterMethod(final Method[] methods, final String property) {

@@ -17,14 +17,13 @@
 
 package org.apache.shardingsphere.scaling.core.config;
 
-import org.apache.shardingsphere.scaling.core.execute.engine.ShardingScalingExecuteEngine;
-
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.apache.shardingsphere.scaling.core.execute.engine.ShardingScalingExecuteEngine;
 
 /**
- * Scaling context.
+ * ShardingSphere-Scaling context.
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter
@@ -32,29 +31,29 @@ public final class ScalingContext {
     
     private static final ScalingContext INSTANCE = new ScalingContext();
     
-    private ServerConfiguration serverConfiguration;
+    private ServerConfiguration serverConfig;
     
     private ShardingScalingExecuteEngine taskExecuteEngine;
     
     private ShardingScalingExecuteEngine importerExecuteEngine;
     
     /**
-     * Get instance of Sharding-Scaling's context.
+     * Get instance of ShardingSphere-Scaling's context.
      *
-     * @return instance of Sharding-Scaling's context.
+     * @return instance of ShardingSphere-Scaling's context.
      */
     public static ScalingContext getInstance() {
         return INSTANCE;
     }
     
     /**
-     * Initialize Scaling context.
+     * Initialize ShardingSphere-Scaling context.
      *
-     * @param serverConfiguration serverConfiguration
+     * @param serverConfig server configuration
      */
-    public void init(final ServerConfiguration serverConfiguration) {
-        this.serverConfiguration = serverConfiguration;
-        taskExecuteEngine = new ShardingScalingExecuteEngine(serverConfiguration.getWorkerThread());
-        importerExecuteEngine = new ShardingScalingExecuteEngine(serverConfiguration.getWorkerThread());
+    public void init(final ServerConfiguration serverConfig) {
+        this.serverConfig = serverConfig;
+        taskExecuteEngine = ShardingScalingExecuteEngine.newCachedThreadInstance();
+        importerExecuteEngine = ShardingScalingExecuteEngine.newFixedThreadInstance(serverConfig.getWorkerThread());
     }
 }

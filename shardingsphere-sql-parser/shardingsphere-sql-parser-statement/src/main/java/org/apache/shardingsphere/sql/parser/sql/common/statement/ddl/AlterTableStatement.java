@@ -18,7 +18,8 @@
 package org.apache.shardingsphere.sql.parser.sql.common.statement.ddl;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.alter.AddColumnDefinitionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.alter.DropColumnDefinitionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.alter.ModifyColumnDefinitionSegment;
@@ -32,11 +33,12 @@ import java.util.LinkedList;
 /**
  * Alter table statement.
  */
-@RequiredArgsConstructor
 @Getter
-public final class AlterTableStatement extends AbstractSQLStatement implements DDLStatement {
+@Setter
+@ToString
+public abstract class AlterTableStatement extends AbstractSQLStatement implements DDLStatement {
     
-    private final SimpleTableSegment table;
+    private SimpleTableSegment table;
     
     private final Collection<AddColumnDefinitionSegment> addColumnDefinitions = new LinkedList<>();
     

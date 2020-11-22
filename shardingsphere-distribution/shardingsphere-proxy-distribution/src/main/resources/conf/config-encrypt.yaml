@@ -19,16 +19,13 @@
 # 
 # Here you can configure the rules for the proxy.
 # This example is configuration of encrypt rule.
-#   
-# If you want to use encrypt, please refer to this file; 
-# if you want to use sharding, please refer to the config-sharding.yaml.
-# if you want to use master-slave, please refer to the config-master_slave.yaml.
 # 
 ######################################################################################################
 #
 #schemaName: encrypt_db
 #
-#dataSourceCommon:
+#dataSource:
+#  url: jdbc:postgresql://127.0.0.1:5432/demo_ds?serverTimezone=UTC&useSSL=false
 #  username: postgresql
 #  password: postgresql
 #  connectionTimeoutMilliseconds: 30000
@@ -38,16 +35,13 @@
 #  minPoolSize: 1
 #  maintenanceIntervalMilliseconds: 30000
 #
-#dataSource:
-#  url: jdbc:postgresql://127.0.0.1:5432/demo_ds?serverTimezone=UTC&useSSL=false
-#
 #rules:
 #- !ENCRYPT
 #  encryptors:
 #    aes_encryptor:
 #      type: AES
 #      props:
-#        aes.key.value: 123456abc
+#        aes-key-value: 123456abc
 #    md5_encryptor:
 #      type: MD5
 #  tables:
@@ -69,7 +63,8 @@
 #
 #schemaName: encrypt_db
 #
-#dataSourceCommon:
+#dataSource:
+#  url: jdbc:mysql://127.0.0.1:3306/demo_ds?serverTimezone=UTC&useSSL=false
 #  username: root
 #  password:
 #  connectionTimeoutMilliseconds: 30000
@@ -79,16 +74,13 @@
 #  minPoolSize: 1
 #  maintenanceIntervalMilliseconds: 30000
 #
-#dataSource:
-#  url: jdbc:mysql://127.0.0.1:3306/demo_ds?serverTimezone=UTC&useSSL=false
-#
 #rules:
 #- !ENCRYPT
 #  encryptors:
 #    aes_encryptor:
 #      type: AES
 #      props:
-#        aes.key.value: 123456abc
+#        aes-key-value: 123456abc
 #    md5_encryptor:
 #      type: MD5
 #  tables:

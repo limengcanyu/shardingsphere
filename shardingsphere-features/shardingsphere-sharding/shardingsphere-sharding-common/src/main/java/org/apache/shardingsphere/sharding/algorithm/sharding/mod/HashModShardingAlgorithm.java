@@ -26,6 +26,7 @@ import org.apache.shardingsphere.sharding.api.sharding.standard.RangeShardingVal
 import org.apache.shardingsphere.sharding.api.sharding.standard.StandardShardingAlgorithm;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Properties;
 
 /**
@@ -35,7 +36,7 @@ import java.util.Properties;
 @Setter
 public final class HashModShardingAlgorithm implements StandardShardingAlgorithm<Comparable<?>>, ShardingAutoTableAlgorithm {
     
-    private static final String SHARDING_COUNT_KEY = "sharding.count";
+    private static final String SHARDING_COUNT_KEY = "sharding-count";
     
     private Properties props = new Properties();
     
@@ -78,5 +79,10 @@ public final class HashModShardingAlgorithm implements StandardShardingAlgorithm
     @Override
     public String getType() {
         return "HASH_MOD";
+    }
+    
+    @Override
+    public Collection<String> getAllPropertyKeys() {
+        return Collections.singletonList(SHARDING_COUNT_KEY);
     }
 }

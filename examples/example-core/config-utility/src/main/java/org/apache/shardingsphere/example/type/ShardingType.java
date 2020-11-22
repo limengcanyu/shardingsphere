@@ -29,11 +29,11 @@ public enum ShardingType {
     
     ENCRYPT_SHADOW,
     
-    MASTER_SLAVE,
+    REPLICA_QUERY,
     
-    MASTER_SLAVE_SHADOW,
+    REPLICA_QUERY_SHADOW,
     
-    SHARDING_MASTER_SLAVE,
+    SHARDING_REPLICA_QUERY,
     
     ENCRYPT,
     

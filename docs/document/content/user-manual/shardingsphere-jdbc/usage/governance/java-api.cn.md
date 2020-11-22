@@ -35,7 +35,7 @@ weight = 1
 // 省略配置数据源以及规则
 // ...
 
-// 配置配置/注册/元数据中心
+// 配置配置/注册中心
 GovernanceCenterConfiguration configuration = new GovernanceCenterConfiguration("Zookeeper", "localhost:2181", new Properties());
 
 // 配置治理
@@ -44,7 +44,7 @@ configurationMap.put("governance-shardingsphere-data-source", configuration);
 
 // 创建 GovernanceShardingSphereDataSource
 DataSource dataSource = GovernanceShardingSphereDataSourceFactory.createDataSource(
-        createDataSourceMap(), createShardingRuleConfig(), new HashMap<String, Object>(), new Properties(),
+        createDataSourceMap(), createShardingRuleConfig(), new Properties(),
         new GovernanceConfiguration("shardingsphere-governance", configurationMap, true));
 ```
 
@@ -57,7 +57,7 @@ DataSource dataSource = GovernanceShardingSphereDataSourceFactory.createDataSour
 
 ```java
 DataSource dataSource = GovernanceShardingSphereDataSourceFactory.createDataSource(
-        createDataSourceMap(), createShardingRuleConfig(), new HashMap<String, Object>(), new Properties(), 
+        createDataSourceMap(), createShardingRuleConfig(), new Properties(), 
         new GovernanceConfiguration("shardingsphere-governance", configurationMap, true));
 String sql = "SELECT i.* FROM t_order o JOIN t_order_item i ON o.order_id=i.order_id WHERE o.user_id=? AND o.order_id=?";
 try (

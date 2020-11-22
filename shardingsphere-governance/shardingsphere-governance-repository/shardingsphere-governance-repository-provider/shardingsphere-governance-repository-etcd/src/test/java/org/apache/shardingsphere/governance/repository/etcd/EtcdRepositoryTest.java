@@ -17,7 +17,7 @@
 
 package org.apache.shardingsphere.governance.repository.etcd;
 
-import com.google.common.base.Charsets;
+import java.nio.charset.StandardCharsets;
 import com.google.protobuf.ByteString;
 import io.etcd.jetcd.ByteSequence;
 import io.etcd.jetcd.Client;
@@ -110,8 +110,8 @@ public final class EtcdRepositoryTest {
         FieldSetter.setField(repository, repository.getClass().getDeclaredField("etcdProperties"), new EtcdProperties(new Properties()));
     }
     
-    @SneakyThrows({InterruptedException.class, ExecutionException.class})
     @SuppressWarnings("unchecked")
+    @SneakyThrows({InterruptedException.class, ExecutionException.class})
     private Client mockClient() {
         when(client.getKVClient()).thenReturn(kv);
         when(kv.get(any(ByteSequence.class))).thenReturn(getFuture);
@@ -130,7 +130,7 @@ public final class EtcdRepositoryTest {
     @Test
     public void assertGetKey() {
         repository.get("key");
-        verify(kv).get(ByteSequence.from("key", Charsets.UTF_8));
+        verify(kv).get(ByteSequence.from("key", StandardCharsets.UTF_8));
         verify(getResponse).getKvs();
     }
     
@@ -200,7 +200,7 @@ public final class EtcdRepositoryTest {
     @Test
     public void assertDelete() {
         repository.delete("key");
-        verify(kv).delete(ByteSequence.from("key", Charsets.UTF_8));
+        verify(kv).delete(ByteSequence.from("key", StandardCharsets.UTF_8));
     }
     
     @Test
@@ -228,8 +228,7 @@ public final class EtcdRepositoryTest {
     }
     
     @Test
-    @SneakyThrows
-    public void assertGetKeyWhenThrowInterruptedException() {
+    public void assertGetKeyWhenThrowInterruptedException() throws ExecutionException, InterruptedException {
         doThrow(InterruptedException.class).when(getFuture).get();
         try {
             repository.get("key");
@@ -241,8 +240,7 @@ public final class EtcdRepositoryTest {
     }
     
     @Test
-    @SneakyThrows
-    public void assertGetKeyWhenThrowExecutionException() {
+    public void assertGetKeyWhenThrowExecutionException() throws ExecutionException, InterruptedException {
         doThrow(ExecutionException.class).when(getFuture).get();
         try {
             repository.get("key");
@@ -254,8 +252,7 @@ public final class EtcdRepositoryTest {
     }
     
     @Test
-    @SneakyThrows
-    public void assertGetChildrenKeysWhenThrowInterruptedException() {
+    public void assertGetChildrenKeysWhenThrowInterruptedException() throws ExecutionException, InterruptedException {
         doThrow(InterruptedException.class).when(getFuture).get();
         try {
             repository.getChildrenKeys("/key/key1");
@@ -267,8 +264,7 @@ public final class EtcdRepositoryTest {
     }
     
     @Test
-    @SneakyThrows
-    public void assertGetChildrenKeysWhenThrowExecutionException() {
+    public void assertGetChildrenKeysWhenThrowExecutionException() throws ExecutionException, InterruptedException {
         doThrow(ExecutionException.class).when(getFuture).get();
         try {
             repository.getChildrenKeys("/key/key1");

@@ -19,17 +19,14 @@ package org.apache.shardingsphere.sql.parser.sql.common.statement.dml;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.TableReferenceSegment;
+import lombok.ToString;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ProjectionsSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.GroupBySegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.OrderBySegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.pagination.limit.LimitSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.LockSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.WhereSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.AbstractSQLStatement;
 
-import java.util.Collection;
-import java.util.LinkedList;
 import java.util.Optional;
 
 /**
@@ -37,23 +34,18 @@ import java.util.Optional;
  */
 @Getter
 @Setter
-public final class SelectStatement extends AbstractSQLStatement implements DMLStatement {
+@ToString
+public abstract class SelectStatement extends AbstractSQLStatement implements DMLStatement {
     
     private ProjectionsSegment projections;
     
-    private final Collection<TableReferenceSegment> tableReferences = new LinkedList<>();
+    private TableSegment from;
     
     private WhereSegment where;
     
     private GroupBySegment groupBy;
     
     private OrderBySegment orderBy;
-    
-    private LimitSegment limit;
-    
-    private SelectStatement parentStatement;
-    
-    private LockSegment lock;
     
     /**
      * Get where.
@@ -80,23 +72,5 @@ public final class SelectStatement extends AbstractSQLStatement implements DMLSt
      */
     public Optional<OrderBySegment> getOrderBy() {
         return Optional.ofNullable(orderBy);
-    }
-    
-    /**
-     * Get order by segment.
-     *
-     * @return order by segment
-     */
-    public Optional<LimitSegment> getLimit() {
-        return Optional.ofNullable(limit);
-    }
-    
-    /**
-     * Get lock segment.
-     *
-     * @return lock segment
-     */
-    public Optional<LockSegment> getLock() {
-        return Optional.ofNullable(lock);
     }
 }

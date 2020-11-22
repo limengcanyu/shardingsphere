@@ -27,15 +27,17 @@ import org.apache.shardingsphere.db.protocol.packet.DatabasePacket;
 import org.apache.shardingsphere.db.protocol.payload.PacketPayload;
 import org.apache.shardingsphere.infra.hook.RootInvokeHook;
 import org.apache.shardingsphere.infra.hook.SPIRootInvokeHook;
+import org.apache.shardingsphere.replicaquery.route.engine.impl.PrimaryVisitedManager;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
-import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.ConnectionStateHandler;
-import org.apache.shardingsphere.proxy.frontend.api.CommandExecutor;
-import org.apache.shardingsphere.proxy.frontend.api.QueryCommandExecutor;
-import org.apache.shardingsphere.proxy.frontend.engine.CommandExecuteEngine;
+import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.ConnectionStatus;
+import org.apache.shardingsphere.proxy.frontend.command.executor.CommandExecutor;
+import org.apache.shardingsphere.proxy.frontend.command.executor.QueryCommandExecutor;
+import org.apache.shardingsphere.proxy.frontend.exception.ExpectedExceptions;
 import org.apache.shardingsphere.proxy.frontend.spi.DatabaseProtocolFrontendEngine;
 
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.Optional;
 
 /**
@@ -63,26 +65,29 @@ public final class CommandExecutorTask implements Runnable {
     public void run() {
         RootInvokeHook rootInvokeHook = new SPIRootInvokeHook();
         rootInvokeHook.start();
-        int connectionSize = 0;
         boolean isNeedFlush = false;
-        try (BackendConnection backendConnection = this.backendConnection;
-             PacketPayload payload = databaseProtocolFrontendEngine.getCodecEngine().createPacketPayload((ByteBuf) message)) {
-            ConnectionStateHandler stateHandler = backendConnection.getStateHandler();
-            stateHandler.waitUntilConnectionReleasedIfNecessary();
-            stateHandler.setRunningStatusIfNecessary();
+        int connectionSize = 0;
+        try (PacketPayload payload = databaseProtocolFrontendEngine.getCodecEngine().createPacketPayload((ByteBuf) message)) {
+            ConnectionStatus connectionStatus = backendConnection.getConnectionStatus();
+            if (!backendConnection.getTransactionStatus().isInConnectionHeldTransaction()) {
+                connectionStatus.waitUntilConnectionRelease();
+                connectionStatus.switchToUsing();
+            }
             isNeedFlush = executeCommand(context, payload, backendConnection);
             connectionSize = backendConnection.getConnectionSize();
             // CHECKSTYLE:OFF
         } catch (final Exception ex) {
             // CHECKSTYLE:ON
-            log.error("Exception occur: ", ex);
-            context.writeAndFlush(databaseProtocolFrontendEngine.getCommandExecuteEngine().getErrorPacket(ex));
-            Optional<DatabasePacket<?>> databasePacket = databaseProtocolFrontendEngine.getCommandExecuteEngine().getOtherPacket();
-            databasePacket.ifPresent(context::writeAndFlush);
+            processException(ex);
         } finally {
+            Collection<SQLException> exceptions = closeExecutionResources();
             if (isNeedFlush) {
                 context.flush();
             }
+            if (!backendConnection.getTransactionStatus().isInConnectionHeldTransaction()) {
+                exceptions.addAll(backendConnection.closeConnections(false));
+            }
+            processClosedExceptions(exceptions);
             rootInvokeHook.finish(connectionSize);
         }
     }
@@ -102,5 +107,33 @@ public final class CommandExecutorTask implements Runnable {
             return true;
         }
         return databaseProtocolFrontendEngine.getFrontendContext().isFlushForPerCommandPacket();
+    }
+    
+    private void processException(final Exception cause) {
+        context.writeAndFlush(databaseProtocolFrontendEngine.getCommandExecuteEngine().getErrorPacket(cause));
+        Optional<DatabasePacket<?>> databasePacket = databaseProtocolFrontendEngine.getCommandExecuteEngine().getOtherPacket();
+        databasePacket.ifPresent(context::writeAndFlush);
+        if (!ExpectedExceptions.isExpected(cause.getClass())) {
+            log.error("Exception occur: ", cause);
+        }
+    }
+    
+    private Collection<SQLException> closeExecutionResources() {
+        Collection<SQLException> result = new LinkedList<>();
+        PrimaryVisitedManager.clear();
+        result.addAll(backendConnection.closeResultSets());
+        result.addAll(backendConnection.closeStatements());
+        return result;
+    }
+    
+    private void processClosedExceptions(final Collection<SQLException> exceptions) {
+        if (exceptions.isEmpty()) {
+            return;
+        }
+        SQLException ex = new SQLException("");
+        for (SQLException each : exceptions) {
+            ex.setNextException(each);
+        }
+        processException(ex);
     }
 }

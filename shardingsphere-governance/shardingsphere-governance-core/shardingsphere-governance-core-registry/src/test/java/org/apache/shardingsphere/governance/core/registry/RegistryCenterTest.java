@@ -56,8 +56,8 @@ public final class RegistryCenterTest {
     
     @Test
     public void assertPersistDataSourcesNode() {
-        registryCenter.persistDataSourcesNode();
-        verify(registryRepository).persist("/registry/datasources", "");
+        registryCenter.persistDataNodes();
+        verify(registryRepository).persist("/states/datanodes", "");
     }
     
     @Test
@@ -74,9 +74,9 @@ public final class RegistryCenterTest {
     
     @Test
     public void assertLoadDisabledDataSources() {
-        List<String> disabledDataSources = Collections.singletonList("slave_ds_0");
+        List<String> disabledDataSources = Collections.singletonList("replica_ds_0");
         when(registryRepository.getChildrenKeys(anyString())).thenReturn(disabledDataSources);
-        registryCenter.loadDisabledDataSources("master_slave_db");
+        registryCenter.loadDisabledDataSources("replica_query_db");
         verify(registryRepository).getChildrenKeys(anyString());
         verify(registryRepository).get(anyString());
     }

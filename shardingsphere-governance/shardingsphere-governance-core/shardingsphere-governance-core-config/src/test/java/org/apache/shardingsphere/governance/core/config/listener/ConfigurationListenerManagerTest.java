@@ -19,7 +19,7 @@ package org.apache.shardingsphere.governance.core.config.listener;
 
 import lombok.SneakyThrows;
 import org.apache.shardingsphere.governance.repository.api.ConfigurationRepository;
-import org.apache.shardingsphere.governance.repository.api.listener.DataChangedEvent.ChangedType;
+import org.apache.shardingsphere.governance.repository.api.listener.DataChangedEvent.Type;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -47,16 +47,16 @@ public final class ConfigurationListenerManagerTest {
     
     @Test
     public void assertInitListeners() {
-        ConfigurationListenerManager actual = new ConfigurationListenerManager(configurationRepository, Arrays.asList("sharding_db", "masterslave_db"));
+        ConfigurationListenerManager actual = new ConfigurationListenerManager(configurationRepository, Arrays.asList("sharding_db", "replica_query_db"));
         setField(actual, "schemaChangedListener", schemaChangedListener);
         setField(actual, "propertiesChangedListener", propertiesChangedListener);
         setField(actual, "authenticationChangedListener", authenticationChangedListener);
         actual.initListeners();
-        verify(propertiesChangedListener).watch(ChangedType.UPDATED);
-        verify(authenticationChangedListener).watch(ChangedType.UPDATED);
+        verify(propertiesChangedListener).watch(Type.UPDATED);
+        verify(authenticationChangedListener).watch(Type.UPDATED);
     }
-
-    @SneakyThrows
+    
+    @SneakyThrows(ReflectiveOperationException.class)
     private static void setField(final Object target, final String fieldName, final Object fieldValue) {
         Field field = target.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);

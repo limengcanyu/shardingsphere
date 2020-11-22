@@ -21,19 +21,19 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.apache.shardingsphere.driver.jdbc.core.datasource.ShardingSphereDataSource;
 import org.apache.shardingsphere.encrypt.rule.EncryptRule;
+import org.apache.shardingsphere.encrypt.rule.EncryptTable;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationPropertyKey;
 import org.apache.shardingsphere.infra.datanode.DataNode;
 import org.apache.shardingsphere.infra.datanode.DataNodeUtil;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
-import org.apache.shardingsphere.masterslave.algorithm.RandomMasterSlaveLoadBalanceAlgorithm;
-import org.apache.shardingsphere.masterslave.rule.MasterSlaveDataSourceRule;
-import org.apache.shardingsphere.masterslave.rule.MasterSlaveRule;
+import org.apache.shardingsphere.replicaquery.algorithm.RandomReplicaLoadBalanceAlgorithm;
+import org.apache.shardingsphere.replicaquery.rule.ReplicaQueryDataSourceRule;
+import org.apache.shardingsphere.replicaquery.rule.ReplicaQueryRule;
 import org.apache.shardingsphere.shadow.rule.ShadowRule;
 import org.apache.shardingsphere.sharding.algorithm.sharding.inline.InlineShardingAlgorithm;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sharding.rule.TableRule;
 import org.apache.shardingsphere.sharding.spi.ShardingAlgorithm;
-import org.apache.shardingsphere.sharding.strategy.ShardingStrategy;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -48,7 +48,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNotNull;
@@ -73,13 +72,13 @@ public class SpringBootStarterTest {
     
     @Test
     public void assertRules() {
-        Collection<ShardingSphereRule> rules = dataSource.getSchemaContexts().getDefaultSchemaContext().getSchema().getRules();
+        Collection<ShardingSphereRule> rules = dataSource.getMetaDataContexts().getDefaultMetaData().getRuleMetaData().getRules();
         assertThat(rules.size(), is(4));
         for (ShardingSphereRule each : rules) {
             if (each instanceof ShardingRule) {
                 assertShardingRule((ShardingRule) each);
-            } else if (each instanceof MasterSlaveRule) {
-                assertMasterSlaveRule((MasterSlaveRule) each);
+            } else if (each instanceof ReplicaQueryRule) {
+                assertReplicaQueryRule((ReplicaQueryRule) each);
             } else if (each instanceof EncryptRule) {
                 assertEncryptRule((EncryptRule) each);
             } else if (each instanceof ShadowRule) {
@@ -92,51 +91,43 @@ public class SpringBootStarterTest {
         assertThat(rule.getDataSourceNames(), is(Sets.newHashSet("ds_0", "ds_1")));
         Map<String, ShardingAlgorithm> shardingAlgorithmMap = rule.getShardingAlgorithms();
         assertNotNull(shardingAlgorithmMap);
-        InlineShardingAlgorithm databaseShardingAlgorithm = InlineShardingAlgorithm.class.cast(shardingAlgorithmMap.get("databaseShardingAlgorithm"));
-        assertThat(databaseShardingAlgorithm.getProps().getProperty("algorithm.expression"), is("ds_$->{user_id % 2}"));
-        InlineShardingAlgorithm orderTableShardingAlgorithm = InlineShardingAlgorithm.class.cast(shardingAlgorithmMap.get("orderTableShardingAlgorithm"));
-        assertThat(orderTableShardingAlgorithm.getProps().getProperty("algorithm.expression"), is("t_order_$->{order_id % 2}"));
+        InlineShardingAlgorithm databaseShardingAlgorithm = (InlineShardingAlgorithm) shardingAlgorithmMap.get("databaseShardingAlgorithm");
+        assertThat(databaseShardingAlgorithm.getProps().getProperty("algorithm-expression"), is("ds_$->{user_id % 2}"));
+        InlineShardingAlgorithm orderTableShardingAlgorithm = (InlineShardingAlgorithm) shardingAlgorithmMap.get("orderTableShardingAlgorithm");
+        assertThat(orderTableShardingAlgorithm.getProps().getProperty("algorithm-expression"), is("t_order_$->{order_id % 2}"));
         Collection<TableRule> tableRules = rule.getTableRules();
         assertNotNull(tableRules);
-        assertThat(tableRules.size(), equalTo(1));
+        assertThat(tableRules.size(), is(1));
         TableRule tableRule = tableRules.iterator().next();
         assertThat(tableRule.getLogicTable(), is("t_order"));
-        List<DataNode> dataNodes = Arrays.asList(new DataNode("ds_0.t_order_0"),
-                new DataNode("ds_0.t_order_1"), new DataNode("ds_1.t_order_0"), new DataNode("ds_1.t_order_1"));
+        List<DataNode> dataNodes = Arrays.asList(new DataNode("ds_0.t_order_0"), new DataNode("ds_0.t_order_1"), new DataNode("ds_1.t_order_0"), new DataNode("ds_1.t_order_1"));
         assertThat(tableRule.getActualDataNodes(), is(dataNodes));
         assertThat(tableRule.getActualDatasourceNames(), is(Sets.newHashSet("ds_0", "ds_1")));
         assertThat(tableRule.getDataNodeGroups(), is(DataNodeUtil.getDataNodeGroups(dataNodes)));
-        assertThat(tableRule.getDatasourceToTablesMap(), is(ImmutableMap.of("ds_1",
-                Sets.newHashSet("t_order_0", "t_order_1"), "ds_0", Sets.newHashSet("t_order_0", "t_order_1"))));
-        ShardingStrategy databaseShardingStrategy = tableRule.getDatabaseShardingStrategy();
-        assertNotNull(databaseShardingStrategy);
-        assertThat(databaseShardingStrategy.getShardingColumns(), is(Sets.newTreeSet(Collections.singleton("user_id"))));
-        assertThat(databaseShardingStrategy.getShardingAlgorithm().getProps().getProperty("algorithm.expression"), is("ds_$->{user_id % 2}"));
-        ShardingStrategy tableShardingStrategy = tableRule.getTableShardingStrategy();
-        assertNotNull(tableShardingStrategy);
-        assertThat(tableShardingStrategy.getShardingColumns(), is(Sets.newTreeSet(Collections.singleton("order_id"))));
-        assertThat(tableShardingStrategy.getShardingAlgorithm().getProps().getProperty("algorithm.expression"), is("t_order_$->{order_id % 2}"));
+        assertThat(tableRule.getDatasourceToTablesMap(), is(ImmutableMap.of("ds_1", Sets.newHashSet("t_order_0", "t_order_1"), "ds_0", Sets.newHashSet("t_order_0", "t_order_1"))));
     }
     
-    private void assertMasterSlaveRule(final MasterSlaveRule rule) {
-        assertThat(rule.getDataSourceMapper(), is(Collections.singletonMap("ds_ms", Arrays.asList("ds_master", "ds_slave_0", "ds_slave_1"))));
-        MasterSlaveDataSourceRule masterSlaveDataSourceRule = rule.getSingleDataSourceRule();
-        assertNotNull(masterSlaveDataSourceRule);
-        assertThat(masterSlaveDataSourceRule.getName(), is("ds_ms"));
-        assertThat(masterSlaveDataSourceRule.getMasterDataSourceName(), is("ds_master"));
-        assertThat(masterSlaveDataSourceRule.getSlaveDataSourceNames(), is(Arrays.asList("ds_slave_0", "ds_slave_1")));
-        assertThat(masterSlaveDataSourceRule.getLoadBalancer(), instanceOf(RandomMasterSlaveLoadBalanceAlgorithm.class));
-        assertThat(masterSlaveDataSourceRule.getDataSourceMapper(), is(Collections.singletonMap("ds_ms", Arrays.asList("ds_master", "ds_slave_0", "ds_slave_1"))));
+    private void assertReplicaQueryRule(final ReplicaQueryRule rule) {
+        assertThat(rule.getDataSourceMapper(), is(Collections.singletonMap("pr_ds", Arrays.asList("primary_ds", "replica_ds_0", "replica_ds_1"))));
+        ReplicaQueryDataSourceRule dataSourceRule = rule.getSingleDataSourceRule();
+        assertNotNull(dataSourceRule);
+        assertThat(dataSourceRule.getName(), is("pr_ds"));
+        assertThat(dataSourceRule.getPrimaryDataSourceName(), is("primary_ds"));
+        assertThat(dataSourceRule.getReplicaDataSourceNames(), is(Arrays.asList("replica_ds_0", "replica_ds_1")));
+        assertThat(dataSourceRule.getLoadBalancer(), instanceOf(RandomReplicaLoadBalanceAlgorithm.class));
+        assertThat(dataSourceRule.getDataSourceMapper(), is(Collections.singletonMap("pr_ds", Arrays.asList("primary_ds", "replica_ds_0", "replica_ds_1"))));
     }
     
     private void assertEncryptRule(final EncryptRule rule) {
-        assertThat(rule.getEncryptTableNames(), is(Sets.newLinkedHashSet(Arrays.asList("t_order"))));
+        assertTrue(rule.findEncryptTable("t_order").isPresent());
+        EncryptTable table = rule.findEncryptTable("t_order").get();
+        assertThat(table.getLogicColumn("pwd_cipher"), is("pwd"));
+        assertThat(table.getPlainColumns(), is(Collections.singletonList("pwd_plain")));
+        assertThat(table.getAssistedQueryColumns(), is(Collections.singletonList("pwd_assisted_query_cipher")));
         assertThat(rule.getCipherColumn("t_order", "pwd"), is("pwd_cipher"));
         assertThat(rule.getAssistedQueryColumns("t_order"), is(Collections.singletonList("pwd_assisted_query_cipher")));
         assertThat(rule.getLogicAndCipherColumns("t_order"), is(Collections.singletonMap("pwd", "pwd_cipher")));
-        assertThat(rule.getLogicColumnOfCipher("t_order", "pwd_cipher"), is("pwd"));
         assertThat(rule.getEncryptValues("t_order", "pwd", Collections.singletonList("pwd_plain")), is(Collections.singletonList("V/RkV1+dVv80Y3csT3cR4g==")));
-        assertThat(rule.getAssistedQueryAndPlainColumns("t_order"), is(Arrays.asList("pwd_assisted_query_cipher", "pwd_plain")));
     }
     
     private void assertShadowRule(final ShadowRule rule) {
@@ -146,7 +137,7 @@ public class SpringBootStarterTest {
     
     @Test
     public void assertProperties() {
-        assertTrue(dataSource.getSchemaContexts().getProps().<Boolean>getValue(ConfigurationPropertyKey.SQL_SHOW));
-        assertThat(dataSource.getSchemaContexts().getProps().getValue(ConfigurationPropertyKey.EXECUTOR_SIZE), is(10));
+        assertTrue(dataSource.getMetaDataContexts().getProps().<Boolean>getValue(ConfigurationPropertyKey.SQL_SHOW));
+        assertThat(dataSource.getMetaDataContexts().getProps().getValue(ConfigurationPropertyKey.EXECUTOR_SIZE), is(10));
     }
 }

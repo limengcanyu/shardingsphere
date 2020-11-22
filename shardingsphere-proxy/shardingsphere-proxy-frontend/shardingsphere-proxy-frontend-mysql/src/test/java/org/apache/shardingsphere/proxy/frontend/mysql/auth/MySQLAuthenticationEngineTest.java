@@ -29,11 +29,12 @@ import org.apache.shardingsphere.db.protocol.mysql.packet.handshake.MySQLHandsha
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
 import org.apache.shardingsphere.infra.auth.Authentication;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
-import org.apache.shardingsphere.infra.context.SchemaContext;
-import org.apache.shardingsphere.infra.context.impl.StandardSchemaContexts;
+import org.apache.shardingsphere.infra.context.metadata.impl.StandardMetaDataContexts;
 import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
-import org.apache.shardingsphere.proxy.backend.schema.ProxySchemaContexts;
-import org.apache.shardingsphere.proxy.frontend.engine.AuthenticationResult;
+import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
+import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
+import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
+import org.apache.shardingsphere.proxy.frontend.auth.AuthenticationResultBuilder;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -104,14 +105,14 @@ public final class MySQLAuthenticationEngineTest {
     private void setAuthenticationResult() {
         Field field = MySQLAuthenticationEngine.class.getDeclaredField("currentAuthResult");
         field.setAccessible(true);
-        field.set(authenticationEngine, AuthenticationResult.continued("root", "sharding_db"));
+        field.set(authenticationEngine, AuthenticationResultBuilder.continued("root", "sharding_db"));
     }
     
     @Test
     public void assertAuthWithLoginFail() throws NoSuchFieldException, IllegalAccessException {
         setConnectionPhase(MySQLConnectionPhase.AUTH_PHASE_FAST_PATH);
         ChannelHandlerContext context = getContext();
-        setSchemas();
+        setMetaDataContexts();
         when(authenticationHandler.login(anyString(), any(), anyString())).thenReturn(Optional.of(MySQLServerErrorCode.ER_ACCESS_DENIED_ERROR));
         authenticationEngine.auth(context, getPayload("root", "sharding_db", authResponse));
         verify(context).writeAndFlush(any(MySQLErrPacket.class));
@@ -120,7 +121,7 @@ public final class MySQLAuthenticationEngineTest {
     @Test
     public void assertAuthWithAbsentDatabase() throws NoSuchFieldException, IllegalAccessException {
         ChannelHandlerContext context = getContext();
-        setSchemas();
+        setMetaDataContexts();
         setConnectionPhase(MySQLConnectionPhase.AUTH_PHASE_FAST_PATH);
         authenticationEngine.auth(context, getPayload("root", "ABSENT DATABASE", authResponse));
         verify(context).writeAndFlush(any(MySQLErrPacket.class));
@@ -131,17 +132,16 @@ public final class MySQLAuthenticationEngineTest {
         setConnectionPhase(MySQLConnectionPhase.AUTH_PHASE_FAST_PATH);
         ChannelHandlerContext context = getContext();
         when(authenticationHandler.login(anyString(), any(), anyString())).thenReturn(Optional.empty());
-        setSchemas();
+        setMetaDataContexts();
         authenticationEngine.auth(context, getPayload("root", "sharding_db", authResponse));
         verify(context).writeAndFlush(any(MySQLOKPacket.class));
     }
     
-    private void setSchemas() throws NoSuchFieldException, IllegalAccessException {
-        Field field = ProxySchemaContexts.getInstance().getClass().getDeclaredField("schemaContexts");
+    private void setMetaDataContexts() throws NoSuchFieldException, IllegalAccessException {
+        Field field = ProxyContext.getInstance().getClass().getDeclaredField("metaDataContexts");
         field.setAccessible(true);
-        field.set(ProxySchemaContexts.getInstance(), 
-                new StandardSchemaContexts(Collections.singletonMap("sharding_db", mock(SchemaContext.class)),
-                        new Authentication(), new ConfigurationProperties(new Properties()), new MySQLDatabaseType()));
+        field.set(ProxyContext.getInstance(), new StandardMetaDataContexts(Collections.singletonMap("sharding_db", mock(ShardingSphereMetaData.class)),
+                mock(ExecutorEngine.class), new Authentication(), new ConfigurationProperties(new Properties()), new MySQLDatabaseType()));
     }
     
     private MySQLPacketPayload getPayload(final String username, final String database, final byte[] authResponse) {

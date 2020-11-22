@@ -19,10 +19,10 @@ package org.apache.shardingsphere.spring.boot.registry;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithm;
 import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmPostProcessor;
 import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
-import org.apache.shardingsphere.infra.spi.type.TypedSPI;
-import org.apache.shardingsphere.infra.spi.type.TypedSPIRegistry;
+import org.apache.shardingsphere.infra.spi.typed.TypedSPIRegistry;
 import org.apache.shardingsphere.infra.yaml.config.algorithm.YamlShardingSphereAlgorithmConfiguration;
 import org.apache.shardingsphere.spring.boot.util.PropertyUtil;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -41,27 +41,29 @@ import java.util.stream.Collectors;
  * Abstract algorithm provided bean registry.
  */
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public abstract class AbstractAlgorithmProvidedBeanRegistry implements BeanDefinitionRegistryPostProcessor, BeanPostProcessor {
+public abstract class AbstractAlgorithmProvidedBeanRegistry<T extends ShardingSphereAlgorithm> implements BeanDefinitionRegistryPostProcessor, BeanPostProcessor {
     
     private final Environment environment;
     
     @SuppressWarnings("all")
-    protected void registerBean(final String preFix, final Class clazz, final BeanDefinitionRegistry registry) {
+    protected void registerBean(final String preFix, final Class<T> algorithmClass, final BeanDefinitionRegistry registry) {
         Map<String, Object> paramMap = PropertyUtil.handle(environment, preFix, Map.class);
-        Set<String> keySet = paramMap.keySet().stream().map(key -> key.substring(0, key.indexOf("."))).collect(Collectors.toSet());
+        Set<String> keys = paramMap.keySet().stream().map(key -> {
+            return key.contains(".") ? key.substring(0, key.indexOf(".")) : key;
+        }).collect(Collectors.toSet());
         Map<String, YamlShardingSphereAlgorithmConfiguration> shardingAlgorithmMap = new LinkedHashMap<>();
-        keySet.forEach(key -> {
-            String type = environment.getProperty(preFix + key + ".type");
-            Map<String, Object> propsMap = PropertyUtil.handle(environment, preFix + key + ".props", Map.class);
-            YamlShardingSphereAlgorithmConfiguration configuration = new YamlShardingSphereAlgorithmConfiguration();
-            configuration.setType(type);
-            configuration.getProps().putAll(propsMap);
-            shardingAlgorithmMap.put(key, configuration);
+        keys.forEach(each -> {
+            String type = environment.getProperty(preFix + each + ".type");
+            Map<String, Object> propsMap = PropertyUtil.handle(environment, preFix + each + ".props", Map.class);
+            YamlShardingSphereAlgorithmConfiguration config = new YamlShardingSphereAlgorithmConfiguration();
+            config.setType(type);
+            config.getProps().putAll(propsMap);
+            shardingAlgorithmMap.put(each, config);
         });
-        ShardingSphereServiceLoader.register(clazz);
+        ShardingSphereServiceLoader.register(algorithmClass);
         shardingAlgorithmMap.forEach((k, v) -> {
-            TypedSPI typedSPI = TypedSPIRegistry.getRegisteredService(clazz, v.getType(), v.getProps());
-            BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(typedSPI.getClass());
+            ShardingSphereAlgorithm algorithm = TypedSPIRegistry.getRegisteredService(algorithmClass, v.getType(), v.getProps());
+            BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(algorithm.getClass());
             builder.addPropertyValue("props", v.getProps());
             registry.registerBeanDefinition(k, builder.getBeanDefinition());
         });

@@ -19,6 +19,7 @@ package org.apache.shardingsphere.sql.parser.sql.common.statement.ddl;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.index.IndexSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.AbstractSQLStatement;
@@ -28,7 +29,8 @@ import org.apache.shardingsphere.sql.parser.sql.common.statement.AbstractSQLStat
  */
 @Getter
 @Setter
-public final class CreateIndexStatement extends AbstractSQLStatement implements DDLStatement {
+@ToString
+public abstract class CreateIndexStatement extends AbstractSQLStatement implements DDLStatement {
     
     private IndexSegment index;
     

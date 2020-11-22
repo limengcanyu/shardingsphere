@@ -21,40 +21,39 @@ chapter = true
 | SQLServerDatabaseType  | SQLServer 数据库          |
 | H2DatabaseType         | H2 数据库                 |
 
-## RuleMetaDataLoader
+## LogicMetaDataLoader
 
 | *SPI 名称*             | *详细说明*         |
 | ---------------------- | ----------------- |
-| RuleMetaDataLoader     | 用于元数据初始化    |
+| LogicMetaDataLoader    | 用于元数据初始化    |
 
 | *已知实现类*            | *详细说明*         |
 | ---------------------- | ----------------- |
 | ShardingMetaDataLoader | 用于分片元数据初始化 |
 | EncryptMetaDataLoader  | 用于加密元数据初始化 |
 
-## RuleMetaDataDecorator
+## LogicMetaDataDecorator
 
 | *SPI 名称*                | *详细说明*        |
 | ------------------------ | ---------------- |
-| RuleMetaDataDecorator    | 用于元数据更新     |
+| LogicMetaDataDecorator   | 用于元数据更新     |
 
 | *已知实现类*               | *详细说明*        |
 | ------------------------- | ---------------- |
 | ShardingMetaDataDecorator | 用于分片元数据更新 |
 | EncryptMetaDataDecorator  | 用于加密元数据更新 |
 
-## RouteDecorator
+## SQLRouter
 
-| *SPI 名称*                | *详细说明*              |
-| ------------------------- | --------------------- |
-| RouteDecorator            | 用于处理路由结果        |
+| *SPI 名称*                   | *详细说明*                 |
+| ---------------------------- | ------------------------- |
+| SQLRouter                    | 用于处理路由结果            |
 
-| *已知实现类*               | *详细说明*             |
-| ------------------------- | --------------------- |
-| ShardingRouteDecorator    | 用于处理分片路由结果     |
-| MasterSlaveRouteDecorator | 用于处理读写分离路由结果 |
-| ReplicaRouteDecorator     | 用于处理多副本路由结果   |
-| ShadowRouteDecorator      | 用于处理影子库路由结果   |
+| *已知实现类*                   | *详细说明*                |
+| ----------------------------- | ------------------------ |
+| ShardingSQLRouter             | 用于处理分片路由结果       |
+| ReplicaQuerySQLRouter         | 用于处理读写分离路由结果    |
+| ShadowSQLRouter               | 用于处理影子库路由结果      |
 
 ## SQLRewriteContextDecorator
 
@@ -67,16 +66,6 @@ chapter = true
 | ShardingSQLRewriteContextDecorator | 用于处理分片 SQL 改写结果   |
 | EncryptSQLRewriteContextDecorator  | 用于处理加密 SQL 改写结果   |
 | ShadowSQLRewriteContextDecorator   | 用于处理影子库 SQL 改写结果 |
-
-## ExecuteGroupDecorator
-
-| *SPI 名称*                   | *详细说明*             |
-| ---------------------------- | --------------------- |
-| ExecuteGroupDecorator        | 用于修改数据节点分组结果 |
-
-| *已知实现类*                  | *详细说明*             |
-| ---------------------------- | --------------------- |
-| ReplicaExecuteGroupDecorator | 用于多副本数据节点分组   |
 
 ## SQLExecutionHook
 

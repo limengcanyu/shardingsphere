@@ -18,35 +18,33 @@
 package org.apache.shardingsphere.proxy.backend.text.admin;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.shardingsphere.distsql.parser.statement.rdl.CreateDataSourcesStatement;
+import org.apache.shardingsphere.distsql.parser.statement.rdl.CreateShardingRuleStatement;
+import org.apache.shardingsphere.governance.core.event.GovernanceEventBus;
+import org.apache.shardingsphere.governance.core.event.model.datasource.DataSourcePersistEvent;
+import org.apache.shardingsphere.governance.core.event.model.rule.RuleConfigurationsPersistEvent;
+import org.apache.shardingsphere.governance.core.event.model.schema.SchemaNamePersistEvent;
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.binder.statement.ddl.CreateDatabaseStatementContext;
+import org.apache.shardingsphere.infra.binder.statement.ddl.DropDatabaseStatementContext;
+import org.apache.shardingsphere.infra.binder.statement.rdl.CreateDataSourcesStatementContext;
+import org.apache.shardingsphere.infra.binder.statement.rdl.CreateShardingRuleStatementContext;
 import org.apache.shardingsphere.infra.config.RuleConfiguration;
 import org.apache.shardingsphere.infra.config.datasource.DataSourceConfiguration;
-import org.apache.shardingsphere.infra.context.impl.StandardSchemaContexts;
+import org.apache.shardingsphere.infra.context.metadata.impl.StandardMetaDataContexts;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
-import org.apache.shardingsphere.infra.eventbus.ShardingSphereEventBus;
-import org.apache.shardingsphere.infra.eventbus.event.DataSourceEvent;
-import org.apache.shardingsphere.infra.eventbus.event.RuleEvent;
-import org.apache.shardingsphere.infra.eventbus.event.SchemaNameEvent;
 import org.apache.shardingsphere.infra.yaml.swapper.YamlRuleConfigurationSwapperEngine;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
+import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.exception.DBCreateExistsException;
 import org.apache.shardingsphere.proxy.backend.response.BackendResponse;
-import org.apache.shardingsphere.proxy.backend.response.error.ErrorResponse;
-import org.apache.shardingsphere.proxy.backend.response.query.QueryData;
 import org.apache.shardingsphere.proxy.backend.response.update.UpdateResponse;
-import org.apache.shardingsphere.proxy.backend.schema.ProxySchemaContexts;
 import org.apache.shardingsphere.proxy.backend.text.TextProtocolBackendHandler;
-import org.apache.shardingsphere.proxy.config.util.DataSourceConverter;
+import org.apache.shardingsphere.proxy.config.util.DataSourceParameterConverter;
 import org.apache.shardingsphere.proxy.config.yaml.YamlDataSourceParameter;
-import org.apache.shardingsphere.proxy.convert.CreateDataSourcesStatementContextConverter;
-import org.apache.shardingsphere.rdl.parser.binder.context.CreateDataSourcesStatementContext;
-import org.apache.shardingsphere.rdl.parser.binder.context.CreateShardingRuleStatementContext;
-import org.apache.shardingsphere.rdl.parser.statement.rdl.CreateDataSourcesStatement;
-import org.apache.shardingsphere.rdl.parser.statement.rdl.CreateShardingRuleStatement;
-import org.apache.shardingsphere.sharding.convert.CreateShardingRuleStatementContextConverter;
+import org.apache.shardingsphere.proxy.converter.CreateDataSourcesStatementContextConverter;
+import org.apache.shardingsphere.sharding.converter.CreateShardingRuleStatementContextConverter;
 import org.apache.shardingsphere.sharding.yaml.config.YamlShardingRuleConfiguration;
-import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
-import org.apache.shardingsphere.sql.parser.binder.statement.ddl.CreateDatabaseStatementContext;
-import org.apache.shardingsphere.sql.parser.binder.statement.ddl.DropDatabaseStatementContext;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateDatabaseStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropDatabaseStatement;
@@ -67,58 +65,59 @@ public final class RDLBackendHandler implements TextProtocolBackendHandler {
     private final SQLStatement sqlStatement;
     
     @Override
-    public BackendResponse execute() {
+    public BackendResponse execute() throws SQLException {
         SQLStatementContext<?> context = getSQLStatementContext();
         if (!isRegistryCenterExisted()) {
-            return new ErrorResponse(new SQLException("No Registry center to execute `%s` SQL", context.getClass().getSimpleName()));
+            throw new SQLException(String.format("No Registry center to execute `%s` SQL", context.getClass().getSimpleName()));
         }
         return getBackendResponse(context);
     }
     
     private BackendResponse execute(final CreateDatabaseStatementContext context) {
-        if (ProxySchemaContexts.getInstance().getSchemaNames().contains(context.getSqlStatement().getDatabaseName())) {
-            return new ErrorResponse(new DBCreateExistsException(context.getSqlStatement().getDatabaseName()));
+        if (ProxyContext.getInstance().getAllSchemaNames().contains(context.getSqlStatement().getDatabaseName())) {
+            throw new DBCreateExistsException(context.getSqlStatement().getDatabaseName());
         }
         // TODO Need to get the executed feedback from registry center for returning.
-        ShardingSphereEventBus.getInstance().post(new SchemaNameEvent(context.getSqlStatement().getDatabaseName(), true));
+        GovernanceEventBus.getInstance().post(new SchemaNamePersistEvent(context.getSqlStatement().getDatabaseName(), false));
         UpdateResponse result = new UpdateResponse();
         result.setType("CREATE");
         return result;
     }
     
     private BackendResponse execute(final DropDatabaseStatementContext context) {
-        if (!ProxySchemaContexts.getInstance().getSchemaNames().contains(context.getSqlStatement().getDatabaseName())) {
-            return new ErrorResponse(new DBCreateExistsException(context.getSqlStatement().getDatabaseName()));
+        if (!ProxyContext.getInstance().getAllSchemaNames().contains(context.getSqlStatement().getDatabaseName())) {
+            throw new DBCreateExistsException(context.getSqlStatement().getDatabaseName());
         }
         // TODO Need to get the executed feedback from registry center for returning.
-        ShardingSphereEventBus.getInstance().post(new SchemaNameEvent(context.getSqlStatement().getDatabaseName(), true));
+        GovernanceEventBus.getInstance().post(new SchemaNamePersistEvent(context.getSqlStatement().getDatabaseName(), true));
         UpdateResponse result = new UpdateResponse();
         result.setType("DROP");
         return result;
     }
     
     private BackendResponse execute(final CreateDataSourcesStatementContext context) {
-        Map<String, YamlDataSourceParameter> parameters = new CreateDataSourcesStatementContextConverter().convert(context);
-        Map<String, DataSourceConfiguration> dataSources = DataSourceConverter.getDataSourceConfigurationMap(DataSourceConverter.getDataSourceParameterMap2(parameters));
+        Map<String, YamlDataSourceParameter> parameters = CreateDataSourcesStatementContextConverter.convert(context);
+        Map<String, DataSourceConfiguration> dataSources = DataSourceParameterConverter.getDataSourceConfigurationMap(
+                DataSourceParameterConverter.getDataSourceParameterMapFromYamlConfiguration(parameters));
         // TODO Need to get the executed feedback from registry center for returning.
-        ShardingSphereEventBus.getInstance().post(new DataSourceEvent(backendConnection.getSchema(), dataSources));
+        GovernanceEventBus.getInstance().post(new DataSourcePersistEvent(backendConnection.getSchemaName(), dataSources));
         UpdateResponse result = new UpdateResponse();
         result.setType("CREATE");
         return result;
     }
     
     private BackendResponse execute(final CreateShardingRuleStatementContext context) {
-        YamlShardingRuleConfiguration configurations = new CreateShardingRuleStatementContextConverter().convert(context);
-        Collection<RuleConfiguration> rules = new YamlRuleConfigurationSwapperEngine().swapToRuleConfigurations(Collections.singleton(configurations));
+        YamlShardingRuleConfiguration config = CreateShardingRuleStatementContextConverter.convert(context);
+        Collection<RuleConfiguration> rules = new YamlRuleConfigurationSwapperEngine().swapToRuleConfigurations(Collections.singleton(config));
         // TODO Need to get the executed feedback from registry center for returning.
-        ShardingSphereEventBus.getInstance().post(new RuleEvent(backendConnection.getSchema(), rules));
+        GovernanceEventBus.getInstance().post(new RuleConfigurationsPersistEvent(backendConnection.getSchemaName(), rules));
         UpdateResponse result = new UpdateResponse();
         result.setType("CREATE");
         return result;
     }
     
     private SQLStatementContext<?> getSQLStatementContext() {
-        DatabaseType databaseType = ProxySchemaContexts.getInstance().getSchemaContexts().getDatabaseType();
+        DatabaseType databaseType = ProxyContext.getInstance().getMetaDataContexts().getDatabaseType();
         if (sqlStatement instanceof CreateDataSourcesStatement) {
             return new CreateDataSourcesStatementContext((CreateDataSourcesStatement) sqlStatement, databaseType);
         }
@@ -145,7 +144,7 @@ public final class RDLBackendHandler implements TextProtocolBackendHandler {
     }
     
     private boolean isRegistryCenterExisted() {
-        return !(ProxySchemaContexts.getInstance().getSchemaContexts() instanceof StandardSchemaContexts);
+        return !(ProxyContext.getInstance().getMetaDataContexts() instanceof StandardMetaDataContexts);
     }
     
     @Override
@@ -154,7 +153,7 @@ public final class RDLBackendHandler implements TextProtocolBackendHandler {
     }
     
     @Override
-    public QueryData getQueryData() {
-        return new QueryData(Collections.emptyList(), Collections.emptyList());
+    public Collection<Object> getRowData() {
+        return Collections.emptyList();
     }
 }

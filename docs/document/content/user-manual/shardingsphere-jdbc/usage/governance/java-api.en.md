@@ -35,7 +35,7 @@ Using ZooKeeper as config center and registry center for example.
 // Omit configure data sources and rule configurations
 // ...
 
-// Configure config/registry/metadata center
+// Configure registry center
 GovernanceCenterConfiguration configuration = new GovernanceCenterConfiguration("Zookeeper", "localhost:2181", new Properties());
 
 // Configure governance
@@ -44,7 +44,7 @@ configurationMap.put("governance-shardingsphere-data-source", configuration);
 
 // Create GovernanceShardingSphereDataSource
 DataSource dataSource = GovernanceShardingSphereDataSourceFactory.createDataSource(
-        createDataSourceMap(), createShardingRuleConfig(), new HashMap<String, Object>(), new Properties(),
+        createDataSourceMap(), createShardingRuleConfig(), new Properties(),
         new GovernanceConfiguration("shardingsphere-governance", configurationMap, true));
 ```
 
@@ -57,7 +57,7 @@ Take native JDBC usage as an example:
 
 ```java
 DataSource dataSource = GovernanceShardingSphereDataSourceFactory.createDataSource(
-        createDataSourceMap(), createShardingRuleConfig(), new HashMap<String, Object>(), new Properties(), 
+        createDataSourceMap(), createShardingRuleConfig(), new Properties(), 
         new GovernanceConfiguration("shardingsphere-governance", configurationMap, true));
 String sql = "SELECT i.* FROM t_order o JOIN t_order_item i ON o.order_id=i.order_id WHERE o.user_id=? AND o.order_id=?";
 try (

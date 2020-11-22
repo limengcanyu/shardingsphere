@@ -24,7 +24,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLServerErrorCode;
 import org.apache.shardingsphere.db.protocol.mysql.packet.handshake.MySQLAuthPluginData;
 import org.apache.shardingsphere.infra.auth.ProxyUser;
-import org.apache.shardingsphere.proxy.backend.schema.ProxySchemaContexts;
+import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,7 +37,7 @@ import java.util.Optional;
 @Getter
 public final class MySQLAuthenticationHandler {
     
-    private static final ProxySchemaContexts PROXY_SCHEMA_CONTEXTS = ProxySchemaContexts.getInstance();
+    private static final ProxyContext PROXY_SCHEMA_CONTEXTS = ProxyContext.getInstance();
     
     private final MySQLAuthPluginData authPluginData = new MySQLAuthPluginData();
     
@@ -61,7 +61,7 @@ public final class MySQLAuthenticationHandler {
     }
     
     private Optional<ProxyUser> getUser(final String username) {
-        for (Entry<String, ProxyUser> entry : PROXY_SCHEMA_CONTEXTS.getSchemaContexts().getAuthentication().getUsers().entrySet()) {
+        for (Entry<String, ProxyUser> entry : PROXY_SCHEMA_CONTEXTS.getMetaDataContexts().getAuthentication().getUsers().entrySet()) {
             if (entry.getKey().equals(username)) {
                 return Optional.of(entry.getValue());
             }

@@ -17,13 +17,15 @@
 
 package org.apache.shardingsphere.scaling.core.metadata;
 
-import org.apache.shardingsphere.sql.parser.binder.metadata.column.ColumnMetaData;
-import org.apache.shardingsphere.sql.parser.binder.metadata.table.TableMetaData;
+import org.apache.shardingsphere.infra.metadata.schema.model.ColumnMetaData;
+import org.apache.shardingsphere.infra.metadata.schema.model.TableMetaData;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -32,8 +34,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.List;
-
-import javax.sql.DataSource;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -48,6 +48,8 @@ public final class MetaDataManagerTest {
     private static final String DATA_TYPE = "DATA_TYPE";
     
     private static final String TYPE_NAME = "TYPE_NAME";
+    
+    private static final String TABLE_NAME = "TABLE_NAME";
     
     private static final String TEST_TABLE = "test";
     
@@ -82,7 +84,7 @@ public final class MetaDataManagerTest {
     private ResultSetMetaData resultSetMetaData;
     
     @Before
-    public void setUp() throws Exception {
+    public void setUp() throws SQLException {
         when(dataSource.getConnection()).thenReturn(connection);
         when(connection.getCatalog()).thenReturn("");
         when(connection.getSchema()).thenReturn("");
@@ -96,6 +98,7 @@ public final class MetaDataManagerTest {
         when(primaryKeyResultSet.next()).thenReturn(true, false);
         when(primaryKeyResultSet.getString(COLUMN_NAME)).thenReturn("id");
         when(columnMetaDataResultSet.next()).thenReturn(true, true, true, false);
+        when(columnMetaDataResultSet.getString(TABLE_NAME)).thenReturn(TEST_TABLE);
         when(columnMetaDataResultSet.getString(COLUMN_NAME)).thenReturn("id", "name", "age");
         when(columnMetaDataResultSet.getInt(DATA_TYPE)).thenReturn(Types.BIGINT, Types.VARCHAR, Types.INTEGER);
         when(columnMetaDataResultSet.getString(TYPE_NAME)).thenReturn("BIGINT", "VARCHAR", "INTEGER");
@@ -130,7 +133,7 @@ public final class MetaDataManagerTest {
     
     @Test(expected = RuntimeException.class)
     public void assertGetTableMetaDataFailure() throws SQLException {
-        when(dataSource.getConnection()).thenThrow(new SQLException());
+        when(dataSource.getConnection()).thenThrow(new SQLException(""));
         new MetaDataManager(dataSource).getTableMetaData(TEST_TABLE);
     }
 }

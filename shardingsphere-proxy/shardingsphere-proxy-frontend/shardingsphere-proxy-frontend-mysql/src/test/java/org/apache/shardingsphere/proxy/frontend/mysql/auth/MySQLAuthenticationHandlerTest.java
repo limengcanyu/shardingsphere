@@ -24,13 +24,12 @@ import org.apache.shardingsphere.db.protocol.mysql.packet.handshake.MySQLAuthPlu
 import org.apache.shardingsphere.infra.auth.Authentication;
 import org.apache.shardingsphere.infra.auth.ProxyUser;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
-import org.apache.shardingsphere.infra.context.SchemaContext;
-import org.apache.shardingsphere.infra.context.SchemaContexts;
-import org.apache.shardingsphere.infra.context.impl.StandardSchemaContexts;
-import org.apache.shardingsphere.infra.context.runtime.RuntimeContext;
-import org.apache.shardingsphere.infra.context.schema.ShardingSphereSchema;
+import org.apache.shardingsphere.infra.context.metadata.MetaDataContexts;
+import org.apache.shardingsphere.infra.context.metadata.impl.StandardMetaDataContexts;
 import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
-import org.apache.shardingsphere.proxy.backend.schema.ProxySchemaContexts;
+import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
+import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
+import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -47,6 +46,8 @@ import static org.mockito.Mockito.mock;
 
 public final class MySQLAuthenticationHandlerTest {
     
+    private static final String SCHEMA_PATTERN = "schema_%s";
+    
     private final MySQLAuthenticationHandler authenticationHandler = new MySQLAuthenticationHandler();
     
     private final byte[] part1 = {84, 85, 115, 77, 68, 116, 85, 78};
@@ -58,7 +59,7 @@ public final class MySQLAuthenticationHandlerTest {
         initAuthPluginDataForAuthenticationHandler();
     }
     
-    @SneakyThrows
+    @SneakyThrows(ReflectiveOperationException.class)
     private void initAuthPluginDataForAuthenticationHandler() {
         MySQLAuthPluginData authPluginData = new MySQLAuthPluginData(part1, part2);
         Field field = MySQLAuthenticationHandler.class.getDeclaredField("authPluginData");
@@ -106,31 +107,27 @@ public final class MySQLAuthenticationHandlerTest {
         assertThat(authenticationHandler.getAuthPluginData().getAuthPluginData(), is(Bytes.concat(part1, part2)));
     }
     
-    @SneakyThrows
     private void setAuthentication(final ProxyUser proxyUser) {
         Authentication authentication = new Authentication();
         authentication.getUsers().put("root", proxyUser);
-        initProxySchemaContexts(authentication);
+        initProxyContext(authentication);
     }
     
-    @SneakyThrows
-    private void initProxySchemaContexts(final Authentication authentication) {
-        Field field = ProxySchemaContexts.getInstance().getClass().getDeclaredField("schemaContexts");
+    @SneakyThrows(ReflectiveOperationException.class)
+    private void initProxyContext(final Authentication authentication) {
+        Field field = ProxyContext.getInstance().getClass().getDeclaredField("metaDataContexts");
         field.setAccessible(true);
-        field.set(ProxySchemaContexts.getInstance(), getSchemaContexts(authentication));
+        field.set(ProxyContext.getInstance(), getMetaDataContexts(authentication));
     }
     
-    private SchemaContexts getSchemaContexts(final Authentication authentication) {
-        return new StandardSchemaContexts(getSchemaContextMap(), authentication, new ConfigurationProperties(new Properties()), new MySQLDatabaseType());
+    private MetaDataContexts getMetaDataContexts(final Authentication authentication) {
+        return new StandardMetaDataContexts(getMetaDataMap(), mock(ExecutorEngine.class), authentication, new ConfigurationProperties(new Properties()), new MySQLDatabaseType());
     }
     
-    private Map<String, SchemaContext> getSchemaContextMap() {
-        Map<String, SchemaContext> result = new HashMap<>(10);
+    private Map<String, ShardingSphereMetaData> getMetaDataMap() {
+        Map<String, ShardingSphereMetaData> result = new HashMap<>(10, 1);
         for (int i = 0; i < 10; i++) {
-            String name = "schema_" + i;
-            ShardingSphereSchema schema = mock(ShardingSphereSchema.class);
-            RuntimeContext runtimeContext = mock(RuntimeContext.class);
-            result.put(name, new SchemaContext(name, schema, runtimeContext));
+            result.put(String.format(SCHEMA_PATTERN, i), mock(ShardingSphereMetaData.class));
         }
         return result;
     }

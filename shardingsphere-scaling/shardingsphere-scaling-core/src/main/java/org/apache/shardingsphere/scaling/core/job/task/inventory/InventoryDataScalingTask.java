@@ -30,63 +30,51 @@ import org.apache.shardingsphere.scaling.core.execute.executor.dumper.Dumper;
 import org.apache.shardingsphere.scaling.core.execute.executor.dumper.DumperFactory;
 import org.apache.shardingsphere.scaling.core.execute.executor.importer.Importer;
 import org.apache.shardingsphere.scaling.core.execute.executor.importer.ImporterFactory;
-import org.apache.shardingsphere.scaling.core.execute.executor.record.DataRecord;
-import org.apache.shardingsphere.scaling.core.execute.executor.record.FinishedRecord;
 import org.apache.shardingsphere.scaling.core.execute.executor.record.Record;
 import org.apache.shardingsphere.scaling.core.job.SyncProgress;
-import org.apache.shardingsphere.scaling.core.job.position.InventoryPosition;
+import org.apache.shardingsphere.scaling.core.job.position.FinishedPosition;
+import org.apache.shardingsphere.scaling.core.job.position.PlaceholderPosition;
 import org.apache.shardingsphere.scaling.core.job.task.ScalingTask;
-import org.apache.shardingsphere.scaling.core.utils.RdbmsConfigurationUtil;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Table slice execute task.
  */
 @Slf4j
-public final class InventoryDataScalingTask extends AbstractShardingScalingExecutor<InventoryPosition> implements ScalingTask<InventoryPosition> {
+public final class InventoryDataScalingTask extends AbstractShardingScalingExecutor implements ScalingTask {
     
-    private final InventoryDumperConfiguration inventoryDumperConfiguration;
+    private final InventoryDumperConfiguration inventoryDumperConfig;
     
-    private final ImporterConfiguration importerConfiguration;
+    private final ImporterConfiguration importerConfig;
     
     private final DataSourceManager dataSourceManager;
     
-    private long estimatedRows;
-    
-    private final AtomicLong syncedRows = new AtomicLong();
-    
     private Dumper dumper;
     
-    public InventoryDataScalingTask(final InventoryDumperConfiguration inventoryDumperConfiguration, final ImporterConfiguration importerConfiguration) {
-        this(inventoryDumperConfiguration, importerConfiguration, new DataSourceManager());
+    public InventoryDataScalingTask(final InventoryDumperConfiguration inventoryDumperConfig, final ImporterConfiguration importerConfig) {
+        this(inventoryDumperConfig, importerConfig, new DataSourceManager());
     }
     
-    @SuppressWarnings("unchecked")
-    public InventoryDataScalingTask(final InventoryDumperConfiguration inventoryDumperConfiguration, final ImporterConfiguration importerConfiguration, final DataSourceManager dataSourceManager) {
-        this.inventoryDumperConfiguration = inventoryDumperConfiguration;
-        this.importerConfiguration = importerConfiguration;
+    public InventoryDataScalingTask(final InventoryDumperConfiguration inventoryDumperConfig, final ImporterConfiguration importerConfig, final DataSourceManager dataSourceManager) {
+        this.inventoryDumperConfig = inventoryDumperConfig;
+        this.importerConfig = importerConfig;
         this.dataSourceManager = dataSourceManager;
-        setTaskId(generateSyncTaskId(inventoryDumperConfiguration));
-        setPositionManager(inventoryDumperConfiguration.getPositionManager());
+        setTaskId(generateSyncTaskId(inventoryDumperConfig));
+        setPositionManager(inventoryDumperConfig.getPositionManager());
     }
     
-    private String generateSyncTaskId(final InventoryDumperConfiguration inventoryDumperConfiguration) {
-        String result = String.format("%s.%s", inventoryDumperConfiguration.getDataSourceName(), inventoryDumperConfiguration.getTableName());
-        return null == inventoryDumperConfiguration.getSpiltNum() ? result : result + "#" + inventoryDumperConfiguration.getSpiltNum();
+    private String generateSyncTaskId(final InventoryDumperConfiguration inventoryDumperConfig) {
+        String result = String.format("%s.%s", inventoryDumperConfig.getDataSourceName(), inventoryDumperConfig.getTableName());
+        return null == inventoryDumperConfig.getSpiltNum() ? result : result + "#" + inventoryDumperConfig.getSpiltNum();
     }
     
     @Override
     public void start() {
-        getEstimatedRows();
         instanceDumper();
-        Importer importer = ImporterFactory.newInstance(importerConfiguration, dataSourceManager);
+        Importer importer = ImporterFactory.newInstance(importerConfig, dataSourceManager);
         instanceChannel(importer);
         Future<?> future = ScalingContext.getInstance().getImporterExecuteEngine().submit(importer, new ExecuteCallback() {
             
@@ -105,35 +93,14 @@ public final class InventoryDataScalingTask extends AbstractShardingScalingExecu
         dataSourceManager.close();
     }
     
-    private void getEstimatedRows() {
-        DataSource dataSource = dataSourceManager.getDataSource(inventoryDumperConfiguration.getDataSourceConfiguration());
-        try (Connection connection = dataSource.getConnection()) {
-            ResultSet resultSet = connection.prepareStatement(String.format("SELECT COUNT(*) FROM %s %s",
-                    inventoryDumperConfiguration.getTableName(),
-                    RdbmsConfigurationUtil.getWhereCondition(inventoryDumperConfiguration)))
-                    .executeQuery();
-            resultSet.next();
-            estimatedRows = resultSet.getInt(1);
-        } catch (final SQLException ex) {
-            throw new SyncTaskExecuteException("get estimated rows error.", ex);
-        }
-    }
-    
     private void instanceDumper() {
-        dumper = DumperFactory.newInstanceJdbcDumper(inventoryDumperConfiguration, dataSourceManager);
+        dumper = DumperFactory.newInstanceJdbcDumper(inventoryDumperConfig, dataSourceManager);
     }
     
     private void instanceChannel(final Importer importer) {
         MemoryChannel channel = new MemoryChannel(records -> {
-            int count = 0;
-            for (Record record : records) {
-                if (record instanceof DataRecord) {
-                    count++;
-                } else if (record instanceof FinishedRecord && record.getPosition() instanceof InventoryPosition) {
-                    getPositionManager().setPosition((InventoryPosition) record.getPosition());
-                }
-            }
-            syncedRows.addAndGet(count);
+            Optional<Record> record = records.stream().filter(each -> !(each.getPosition() instanceof PlaceholderPosition)).reduce((a, b) -> b);
+            record.ifPresent(value -> getPositionManager().setPosition(value.getPosition()));
         });
         dumper.setChannel(channel);
         importer.setChannel(channel);
@@ -158,6 +125,6 @@ public final class InventoryDataScalingTask extends AbstractShardingScalingExecu
     
     @Override
     public SyncProgress getProgress() {
-        return new InventoryDataSyncTaskProgress(getTaskId(), estimatedRows, syncedRows.get());
+        return new InventoryDataSyncTaskProgress(getTaskId(), getPositionManager().getPosition() instanceof FinishedPosition);
     }
 }

@@ -31,7 +31,7 @@ import org.apache.shardingsphere.dbtest.cases.assertion.root.SQLCaseType;
 import org.apache.shardingsphere.dbtest.engine.SQLType;
 import org.apache.shardingsphere.dbtest.env.IntegrateTestEnvironment;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
-import org.apache.shardingsphere.infra.database.type.DatabaseTypes;
+import org.apache.shardingsphere.infra.database.type.DatabaseTypeRegistry;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -141,7 +141,7 @@ public final class IntegrateTestParameters {
     
     private static Collection<DatabaseType> getDatabaseTypes(final String databaseTypes) {
         String candidates = Strings.isNullOrEmpty(databaseTypes) ? "H2,MySQL,Oracle,SQLServer,PostgreSQL" : databaseTypes;
-        return Splitter.on(',').trimResults().splitToList(candidates).stream().map(DatabaseTypes::getActualDatabaseType).collect(Collectors.toList());
+        return Splitter.on(',').trimResults().splitToList(candidates).stream().map(DatabaseTypeRegistry::getActualDatabaseType).collect(Collectors.toList());
     }
     
     private static void printTestPlan(final Map<DatabaseType, Collection<Object[]>> availableCases, final Map<DatabaseType, Collection<Object[]>> disabledCases, final long factor) {
@@ -161,7 +161,7 @@ public final class IntegrateTestParameters {
         log.info(summary);
     }
     
-    @SneakyThrows
+    @SneakyThrows(ReflectiveOperationException.class)
     private static long calculateRunnableTestAnnotation() {
         long result = 0;
         StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();

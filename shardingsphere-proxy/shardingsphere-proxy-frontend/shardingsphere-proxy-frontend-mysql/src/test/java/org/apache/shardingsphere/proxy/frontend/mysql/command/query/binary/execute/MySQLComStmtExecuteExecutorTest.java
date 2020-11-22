@@ -20,18 +20,17 @@ package org.apache.shardingsphere.proxy.frontend.mysql.command.query.binary.exec
 import org.apache.shardingsphere.db.protocol.mysql.packet.command.query.binary.execute.MySQLComStmtExecutePacket;
 import org.apache.shardingsphere.infra.auth.Authentication;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
-import org.apache.shardingsphere.infra.context.SchemaContext;
-import org.apache.shardingsphere.infra.context.impl.StandardSchemaContexts;
-import org.apache.shardingsphere.infra.context.runtime.RuntimeContext;
+import org.apache.shardingsphere.infra.context.metadata.impl.StandardMetaDataContexts;
 import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
-import org.apache.shardingsphere.infra.executor.sql.raw.execute.result.query.QueryHeader;
+import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
+import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryHeader;
+import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.proxy.backend.communication.DatabaseCommunicationEngine;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
-import org.apache.shardingsphere.proxy.backend.response.error.ErrorResponse;
+import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.response.query.QueryResponse;
 import org.apache.shardingsphere.proxy.backend.response.update.UpdateResponse;
-import org.apache.shardingsphere.proxy.backend.schema.ProxySchemaContexts;
-import org.apache.shardingsphere.rdl.parser.engine.ShardingSphereSQLParserEngine;
+import org.apache.shardingsphere.proxy.frontend.command.executor.ResponseType;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,6 +46,7 @@ import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -54,58 +54,40 @@ import static org.mockito.Mockito.when;
 public final class MySQLComStmtExecuteExecutorTest {
     
     @Mock
-    private SQLException sqlException;
-    
-    @Mock
     private DatabaseCommunicationEngine databaseCommunicationEngine;
     
     @Before
     public void setUp() throws ReflectiveOperationException {
-        Field schemaContexts = ProxySchemaContexts.getInstance().getClass().getDeclaredField("schemaContexts");
-        schemaContexts.setAccessible(true);
-        schemaContexts.set(ProxySchemaContexts.getInstance(),
-                new StandardSchemaContexts(getSchemaContextMap(), new Authentication(), new ConfigurationProperties(new Properties()), new MySQLDatabaseType()));
-    }
-    
-    private Map<String, SchemaContext> getSchemaContextMap() {
-        SchemaContext result = mock(SchemaContext.class);
-        RuntimeContext runtimeContext = mock(RuntimeContext.class);
-        ShardingSphereSQLParserEngine sqlParserEngine = mock(ShardingSphereSQLParserEngine.class);
-        when(runtimeContext.getSqlParserEngine()).thenReturn(sqlParserEngine);
-        when(result.getRuntimeContext()).thenReturn(runtimeContext);
-        return Collections.singletonMap("schema", result);
+        Field metaDataContexts = ProxyContext.getInstance().getClass().getDeclaredField("metaDataContexts");
+        metaDataContexts.setAccessible(true);
+        Map<String, ShardingSphereMetaData> metaDataMap = Collections.singletonMap("logic_db", mock(ShardingSphereMetaData.class, RETURNS_DEEP_STUBS));
+        metaDataContexts.set(ProxyContext.getInstance(), 
+                new StandardMetaDataContexts(metaDataMap, mock(ExecutorEngine.class), new Authentication(), new ConfigurationProperties(new Properties()), new MySQLDatabaseType()));
     }
     
     @Test
-    public void assertIsQueryResponse() throws NoSuchFieldException {
+    public void assertIsQueryResponse() throws NoSuchFieldException, SQLException {
         BackendConnection backendConnection = mock(BackendConnection.class);
-        when(backendConnection.getSchema()).thenReturn("schema");
-        MySQLComStmtExecuteExecutor mysqlComStmtExecuteExecutor = new MySQLComStmtExecuteExecutor(mock(MySQLComStmtExecutePacket.class), backendConnection);
+        when(backendConnection.getSchemaName()).thenReturn("logic_db");
+        MySQLComStmtExecutePacket packet = mock(MySQLComStmtExecutePacket.class);
+        when(packet.getSql()).thenReturn("SELECT 1");
+        MySQLComStmtExecuteExecutor mysqlComStmtExecuteExecutor = new MySQLComStmtExecuteExecutor(packet, backendConnection);
         FieldSetter.setField(mysqlComStmtExecuteExecutor, MySQLComStmtExecuteExecutor.class.getDeclaredField("databaseCommunicationEngine"), databaseCommunicationEngine);
         when(databaseCommunicationEngine.execute()).thenReturn(new QueryResponse(Collections.singletonList(mock(QueryHeader.class))));
         mysqlComStmtExecuteExecutor.execute();
-        assertThat(mysqlComStmtExecuteExecutor.isQueryResponse(), is(true));
+        assertThat(mysqlComStmtExecuteExecutor.getResponseType(), is(ResponseType.QUERY));
     }
     
     @Test
-    public void assertIsUpdateResponse() throws NoSuchFieldException {
+    public void assertIsUpdateResponse() throws NoSuchFieldException, SQLException {
         BackendConnection backendConnection = mock(BackendConnection.class);
-        when(backendConnection.getSchema()).thenReturn("schema");
-        MySQLComStmtExecuteExecutor mysqlComStmtExecuteExecutor = new MySQLComStmtExecuteExecutor(mock(MySQLComStmtExecutePacket.class), backendConnection);
+        when(backendConnection.getSchemaName()).thenReturn("logic_db");
+        MySQLComStmtExecutePacket packet = mock(MySQLComStmtExecutePacket.class);
+        when(packet.getSql()).thenReturn("SELECT 1");
+        MySQLComStmtExecuteExecutor mysqlComStmtExecuteExecutor = new MySQLComStmtExecuteExecutor(packet, backendConnection);
         FieldSetter.setField(mysqlComStmtExecuteExecutor, MySQLComStmtExecuteExecutor.class.getDeclaredField("databaseCommunicationEngine"), databaseCommunicationEngine);
         when(databaseCommunicationEngine.execute()).thenReturn(new UpdateResponse());
         mysqlComStmtExecuteExecutor.execute();
-        assertThat(mysqlComStmtExecuteExecutor.isUpdateResponse(), is(true));
-    }
-    
-    @Test
-    public void assertIsErrorResponse() throws NoSuchFieldException {
-        BackendConnection backendConnection = mock(BackendConnection.class);
-        when(backendConnection.getSchema()).thenReturn("schema");
-        MySQLComStmtExecuteExecutor mysqlComStmtExecuteExecutor = new MySQLComStmtExecuteExecutor(mock(MySQLComStmtExecutePacket.class), backendConnection);
-        FieldSetter.setField(mysqlComStmtExecuteExecutor, MySQLComStmtExecuteExecutor.class.getDeclaredField("databaseCommunicationEngine"), databaseCommunicationEngine);
-        when(databaseCommunicationEngine.execute()).thenReturn(new ErrorResponse(sqlException));
-        mysqlComStmtExecuteExecutor.execute();
-        assertThat(mysqlComStmtExecuteExecutor.isErrorResponse(), is(true));
+        assertThat(mysqlComStmtExecuteExecutor.getResponseType(), is(ResponseType.UPDATE));
     }
 }

@@ -25,7 +25,10 @@ import org.apache.shardingsphere.transaction.xa.spi.SingleXAResource;
 import org.apache.shardingsphere.transaction.xa.spi.XATransactionManager;
 
 import javax.sql.XADataSource;
+import javax.transaction.RollbackException;
+import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
+import java.util.Properties;
 
 /**
  * Atomikos XA transaction manager.
@@ -51,8 +54,8 @@ public final class AtomikosTransactionManager implements XATransactionManager {
         userTransactionService.removeResource(new AtomikosXARecoverableResource(dataSourceName, xaDataSource));
     }
     
+    @SneakyThrows({SystemException.class, RollbackException.class})
     @Override
-    @SneakyThrows
     public void enlistResource(final SingleXAResource xaResource) {
         transactionManager.getTransaction().enlistResource(xaResource);
     }
@@ -65,5 +68,20 @@ public final class AtomikosTransactionManager implements XATransactionManager {
     @Override
     public void close() {
         userTransactionService.shutdown(true);
+    }
+    
+    @Override
+    public String getType() {
+        return "atomikos";
+    }
+    
+    @Override
+    public Properties getProps() {
+        return null;
+    }
+    
+    @Override
+    public void setProps(final Properties props) {
+        
     }
 }

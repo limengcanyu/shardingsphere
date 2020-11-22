@@ -17,17 +17,16 @@
 
 package org.apache.shardingsphere.proxy.backend.text.admin;
 
-import lombok.SneakyThrows;
 import org.apache.shardingsphere.infra.auth.Authentication;
 import org.apache.shardingsphere.infra.auth.ProxyUser;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
-import org.apache.shardingsphere.infra.context.SchemaContext;
-import org.apache.shardingsphere.infra.context.impl.StandardSchemaContexts;
+import org.apache.shardingsphere.infra.context.metadata.impl.StandardMetaDataContexts;
 import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
+import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
+import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
-import org.apache.shardingsphere.proxy.backend.response.query.QueryData;
+import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.response.query.QueryResponse;
-import org.apache.shardingsphere.proxy.backend.schema.ProxySchemaContexts;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,7 +34,6 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.lang.reflect.Field;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,30 +48,31 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public final class ShowDatabasesBackendHandlerTest {
     
+    private static final String SCHEMA_PATTERN = "schema_%s";
+    
     private ShowDatabasesBackendHandler showDatabasesBackendHandler;
     
     @Before
-    @SneakyThrows(ReflectiveOperationException.class)
-    public void setUp() {
+    public void setUp() throws IllegalAccessException, NoSuchFieldException {
         BackendConnection backendConnection = mock(BackendConnection.class);
         when(backendConnection.getUsername()).thenReturn("root");
         showDatabasesBackendHandler = new ShowDatabasesBackendHandler(backendConnection);
-        Field schemaContexts = ProxySchemaContexts.getInstance().getClass().getDeclaredField("schemaContexts");
-        schemaContexts.setAccessible(true);
-        schemaContexts.set(ProxySchemaContexts.getInstance(),
-                new StandardSchemaContexts(getSchemaContextMap(), getAuthentication(), new ConfigurationProperties(new Properties()), new MySQLDatabaseType()));
+        Field metaDataContexts = ProxyContext.getInstance().getClass().getDeclaredField("metaDataContexts");
+        metaDataContexts.setAccessible(true);
+        metaDataContexts.set(ProxyContext.getInstance(), new StandardMetaDataContexts(
+                getMetaDataMap(), mock(ExecutorEngine.class), getAuthentication(), new ConfigurationProperties(new Properties()), new MySQLDatabaseType()));
     }
     
-    private Map<String, SchemaContext> getSchemaContextMap() {
-        Map<String, SchemaContext> result = new HashMap<>(10);
+    private Map<String, ShardingSphereMetaData> getMetaDataMap() {
+        Map<String, ShardingSphereMetaData> result = new HashMap<>(10);
         for (int i = 0; i < 10; i++) {
-            result.put("schema_" + i, mock(SchemaContext.class));
+            result.put(String.format(SCHEMA_PATTERN, i), mock(ShardingSphereMetaData.class));
         }
         return result;
     }
     
     private Authentication getAuthentication() {
-        ProxyUser proxyUser = new ProxyUser("root", Arrays.asList("schema_0", "schema_1"));
+        ProxyUser proxyUser = new ProxyUser("root", Arrays.asList(String.format(SCHEMA_PATTERN, 0), String.format(SCHEMA_PATTERN, 1)));
         Authentication result = new Authentication();
         result.getUsers().put("root", proxyUser);
         return result;
@@ -90,10 +89,7 @@ public final class ShowDatabasesBackendHandlerTest {
     public void assertShowDatabaseUsingStream() throws SQLException {
         showDatabasesBackendHandler.execute();
         while (showDatabasesBackendHandler.next()) {
-            QueryData queryData = showDatabasesBackendHandler.getQueryData();
-            assertThat(queryData.getColumnTypes().size(), is(1));
-            assertThat(queryData.getColumnTypes().iterator().next(), is(Types.VARCHAR));
-            assertThat(queryData.getData().size(), is(1));
+            assertThat(showDatabasesBackendHandler.getRowData().size(), is(1));
         }
     }
 }

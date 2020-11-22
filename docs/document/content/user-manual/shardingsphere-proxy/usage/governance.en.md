@@ -3,11 +3,11 @@ title = "Governance"
 weight = 2
 +++
 
-ShardingSphere-Proxy use SPI to support [Governance](/en/features/governance/management/), realize the unified management of configurations and metadata, as well as instance disabling and slave disabling.
+ShardingSphere-Proxy use SPI to support [Governance](/en/features/governance/management/), realize the unified management of configurations and metadata, as well as instance disabling and replica disabling.
 
 ## Zookeeper
 
-ShardingSphere-Proxy has provided the solution of Zookeeper in default, which implements the functions of config center, registry center and metadata center.
+ShardingSphere-Proxy has provided the solution of Zookeeper in default, which implements the functions of config center, registry center.
 [Configuration Rules](/en/user-manual/shardingsphere-jdbc/configuration/yaml/governance/) consistent with ShardingSphere-JDBC YAML.
 
 ## Other Third Party Components

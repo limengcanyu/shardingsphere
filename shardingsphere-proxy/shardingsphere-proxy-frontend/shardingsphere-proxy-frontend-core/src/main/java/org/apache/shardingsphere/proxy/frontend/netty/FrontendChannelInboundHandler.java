@@ -24,16 +24,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.db.protocol.payload.PacketPayload;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationPropertyKey;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
-import org.apache.shardingsphere.proxy.backend.schema.ProxySchemaContexts;
-import org.apache.shardingsphere.proxy.frontend.command.CommandExecutorTask;
-import org.apache.shardingsphere.proxy.frontend.engine.AuthenticationResult;
+import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
+import org.apache.shardingsphere.proxy.frontend.auth.AuthenticationResult;
 import org.apache.shardingsphere.proxy.frontend.executor.ChannelThreadExecutorGroup;
-import org.apache.shardingsphere.proxy.frontend.executor.CommandExecutorSelector;
 import org.apache.shardingsphere.proxy.frontend.spi.DatabaseProtocolFrontendEngine;
+import org.apache.shardingsphere.proxy.frontend.state.ProxyStateContext;
+import org.apache.shardingsphere.replicaquery.route.engine.impl.PrimaryVisitedManager;
 import org.apache.shardingsphere.transaction.core.TransactionType;
-
-import java.sql.SQLException;
-import java.util.concurrent.ExecutorService;
 
 /**
  * Frontend channel inbound handler.
@@ -49,9 +46,8 @@ public final class FrontendChannelInboundHandler extends ChannelInboundHandlerAd
     
     public FrontendChannelInboundHandler(final DatabaseProtocolFrontendEngine databaseProtocolFrontendEngine) {
         this.databaseProtocolFrontendEngine = databaseProtocolFrontendEngine;
-        TransactionType transactionType = TransactionType.valueOf(ProxySchemaContexts.getInstance().getSchemaContexts().getProps().getValue(ConfigurationPropertyKey.PROXY_TRANSACTION_TYPE));
-        boolean supportHint = ProxySchemaContexts.getInstance().getSchemaContexts().getProps().<Boolean>getValue(ConfigurationPropertyKey.PROXY_HINT_ENABLED);
-        backendConnection = new BackendConnection(transactionType, supportHint);
+        TransactionType transactionType = TransactionType.valueOf(ProxyContext.getInstance().getMetaDataContexts().getProps().getValue(ConfigurationPropertyKey.PROXY_TRANSACTION_TYPE));
+        backendConnection = new BackendConnection(transactionType);
     }
     
     @Override
@@ -66,9 +62,7 @@ public final class FrontendChannelInboundHandler extends ChannelInboundHandlerAd
             authorized = auth(context, (ByteBuf) message);
             return;
         }
-        ExecutorService executorService = CommandExecutorSelector.getExecutor(databaseProtocolFrontendEngine.getFrontendContext().isOccupyThreadForPerConnection(), 
-                backendConnection.isSupportHint(), backendConnection.getTransactionType(), context.channel().id());
-        executorService.execute(new CommandExecutorTask(databaseProtocolFrontendEngine, backendConnection, context, message));
+        ProxyStateContext.execute(context, message, databaseProtocolFrontendEngine, backendConnection);
     }
     
     private boolean auth(final ChannelHandlerContext context, final ByteBuf message) {
@@ -89,17 +83,24 @@ public final class FrontendChannelInboundHandler extends ChannelInboundHandlerAd
     }
     
     @Override
-    public void channelInactive(final ChannelHandlerContext context) throws SQLException {
+    public void channelInactive(final ChannelHandlerContext context) {
         context.fireChannelInactive();
+        closeAllResources(context);
+    }
+    
+    private void closeAllResources(final ChannelHandlerContext context) {
         databaseProtocolFrontendEngine.release(backendConnection);
-        backendConnection.close(true);
+        PrimaryVisitedManager.clear();
+        backendConnection.closeResultSets();
+        backendConnection.closeStatements();
+        backendConnection.closeConnections(true);
         ChannelThreadExecutorGroup.getInstance().unregister(context.channel().id());
     }
     
     @Override
     public void channelWritabilityChanged(final ChannelHandlerContext context) {
         if (context.channel().isWritable()) {
-            backendConnection.getResourceSynchronizer().doNotify();
+            backendConnection.getResourceLock().doNotify();
         }
     }
 }

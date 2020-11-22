@@ -28,11 +28,12 @@ import java.sql.SQLException;
 public interface DatabaseCommunicationEngine {
     
     /**
-     * Execute command.
+     * Execute to database.
      *
      * @return backend response
+     * @throws SQLException SQL exception
      */
-    BackendResponse execute();
+    BackendResponse execute() throws SQLException;
     
     /**
      * Goto next result value.

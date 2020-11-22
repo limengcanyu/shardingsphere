@@ -17,11 +17,11 @@
 
 package org.apache.shardingsphere.governance.core.config.listener;
 
-import org.apache.shardingsphere.governance.core.common.event.GovernanceEvent;
-import org.apache.shardingsphere.governance.core.common.event.auth.AuthenticationChangedEvent;
+import org.apache.shardingsphere.governance.core.event.model.GovernanceEvent;
+import org.apache.shardingsphere.governance.core.event.model.auth.AuthenticationChangedEvent;
 import org.apache.shardingsphere.governance.repository.api.ConfigurationRepository;
 import org.apache.shardingsphere.governance.repository.api.listener.DataChangedEvent;
-import org.apache.shardingsphere.governance.repository.api.listener.DataChangedEvent.ChangedType;
+import org.apache.shardingsphere.governance.repository.api.listener.DataChangedEvent.Type;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,7 +38,7 @@ import static org.junit.Assert.assertTrue;
 public final class AuthenticationChangedListenerTest {
     
     private static final String AUTHENTICATION_YAML = "  users:\n" + "    root1:\n      password: root1\n" 
-            + "      authorizedSchemas: sharding_db\n" + "    root2:\n" + "      password: root2\n" + "      authorizedSchemas: sharding_db,ms_db";
+            + "      authorizedSchemas: sharding_db\n" + "    root2:\n" + "      password: root2\n" + "      authorizedSchemas: sharding_db,pr_db";
     
     private AuthenticationChangedListener authenticationChangedListener;
     
@@ -51,8 +51,8 @@ public final class AuthenticationChangedListenerTest {
     }
     
     @Test
-    public void assertCreateGovernanceEvent() {
-        Optional<GovernanceEvent> actual = authenticationChangedListener.createGovernanceEvent(new DataChangedEvent("test", AUTHENTICATION_YAML, ChangedType.UPDATED));
+    public void assertCreateEvent() {
+        Optional<GovernanceEvent> actual = authenticationChangedListener.createEvent(new DataChangedEvent("test", AUTHENTICATION_YAML, Type.UPDATED));
         assertTrue(actual.isPresent());
         assertThat(((AuthenticationChangedEvent) actual.get()).getAuthentication().getUsers().get("root1").getPassword(), is("root1"));
     }

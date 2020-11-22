@@ -20,12 +20,12 @@ package org.apache.shardingsphere.infra.rewrite.engine;
 import org.apache.shardingsphere.infra.datanode.DataNode;
 import org.apache.shardingsphere.infra.rewrite.context.SQLRewriteContext;
 import org.apache.shardingsphere.infra.rewrite.engine.result.RouteSQLRewriteResult;
+import org.apache.shardingsphere.infra.route.context.RouteContext;
 import org.apache.shardingsphere.infra.route.context.RouteMapper;
-import org.apache.shardingsphere.infra.route.context.RouteResult;
 import org.apache.shardingsphere.infra.route.context.RouteUnit;
-import org.apache.shardingsphere.sql.parser.binder.metadata.schema.SchemaMetaData;
-import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
-import org.apache.shardingsphere.sql.parser.binder.statement.dml.InsertStatementContext;
+import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.binder.statement.dml.InsertStatementContext;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -40,11 +40,11 @@ public final class RouteSQLRewriteEngineTest {
     
     @Test
     public void assertRewriteWithStandardParameterBuilder() {
-        SQLRewriteContext sqlRewriteContext = new SQLRewriteContext(mock(SchemaMetaData.class), mock(SQLStatementContext.class), "SELECT ?", Collections.singletonList(1));
-        RouteResult routeResult = new RouteResult();
+        SQLRewriteContext sqlRewriteContext = new SQLRewriteContext(mock(ShardingSphereSchema.class), mock(SQLStatementContext.class), "SELECT ?", Collections.singletonList(1));
         RouteUnit routeUnit = new RouteUnit(new RouteMapper("ds", "ds_0"), Collections.singletonList(new RouteMapper("tbl", "tbl_0")));
-        routeResult.getRouteUnits().add(routeUnit);
-        RouteSQLRewriteResult actual = new RouteSQLRewriteEngine().rewrite(sqlRewriteContext, routeResult);
+        RouteContext routeContext = new RouteContext();
+        routeContext.getRouteUnits().add(routeUnit);
+        RouteSQLRewriteResult actual = new RouteSQLRewriteEngine().rewrite(sqlRewriteContext, routeContext);
         assertThat(actual.getSqlRewriteUnits().size(), is(1));
         assertThat(actual.getSqlRewriteUnits().get(routeUnit).getSql(), is("SELECT ?"));
         assertThat(actual.getSqlRewriteUnits().get(routeUnit).getParameters(), is(Collections.singletonList(1)));
@@ -54,11 +54,11 @@ public final class RouteSQLRewriteEngineTest {
     public void assertRewriteWithGroupedParameterBuilderForBroadcast() {
         InsertStatementContext statementContext = mock(InsertStatementContext.class);
         when(statementContext.getGroupedParameters()).thenReturn(Collections.singletonList(Collections.singletonList(1)));
-        SQLRewriteContext sqlRewriteContext = new SQLRewriteContext(mock(SchemaMetaData.class), statementContext, "INSERT INTO tbl VALUES (?)", Collections.singletonList(1));
-        RouteResult routeResult = new RouteResult();
+        SQLRewriteContext sqlRewriteContext = new SQLRewriteContext(mock(ShardingSphereSchema.class), statementContext, "INSERT INTO tbl VALUES (?)", Collections.singletonList(1));
         RouteUnit routeUnit = new RouteUnit(new RouteMapper("ds", "ds_0"), Collections.singletonList(new RouteMapper("tbl", "tbl_0")));
-        routeResult.getRouteUnits().add(routeUnit);
-        RouteSQLRewriteResult actual = new RouteSQLRewriteEngine().rewrite(sqlRewriteContext, routeResult);
+        RouteContext routeContext = new RouteContext();
+        routeContext.getRouteUnits().add(routeUnit);
+        RouteSQLRewriteResult actual = new RouteSQLRewriteEngine().rewrite(sqlRewriteContext, routeContext);
         assertThat(actual.getSqlRewriteUnits().size(), is(1));
         assertThat(actual.getSqlRewriteUnits().get(routeUnit).getSql(), is("INSERT INTO tbl VALUES (?)"));
         assertThat(actual.getSqlRewriteUnits().get(routeUnit).getParameters(), is(Collections.singletonList(1)));
@@ -68,13 +68,13 @@ public final class RouteSQLRewriteEngineTest {
     public void assertRewriteWithGroupedParameterBuilderForRouteWithSameDataNode() {
         InsertStatementContext statementContext = mock(InsertStatementContext.class);
         when(statementContext.getGroupedParameters()).thenReturn(Collections.singletonList(Collections.singletonList(1)));
-        SQLRewriteContext sqlRewriteContext = new SQLRewriteContext(mock(SchemaMetaData.class), statementContext, "INSERT INTO tbl VALUES (?)", Collections.singletonList(1));
-        RouteResult routeResult = new RouteResult();
+        SQLRewriteContext sqlRewriteContext = new SQLRewriteContext(mock(ShardingSphereSchema.class), statementContext, "INSERT INTO tbl VALUES (?)", Collections.singletonList(1));
         RouteUnit routeUnit = new RouteUnit(new RouteMapper("ds", "ds_0"), Collections.singletonList(new RouteMapper("tbl", "tbl_0")));
-        routeResult.getRouteUnits().add(routeUnit);
+        RouteContext routeContext = new RouteContext();
+        routeContext.getRouteUnits().add(routeUnit);
         // TODO check why data node is "ds.tbl_0", not "ds_0.tbl_0"
-        routeResult.getOriginalDataNodes().add(Collections.singletonList(new DataNode("ds.tbl_0")));
-        RouteSQLRewriteResult actual = new RouteSQLRewriteEngine().rewrite(sqlRewriteContext, routeResult);
+        routeContext.getOriginalDataNodes().add(Collections.singletonList(new DataNode("ds.tbl_0")));
+        RouteSQLRewriteResult actual = new RouteSQLRewriteEngine().rewrite(sqlRewriteContext, routeContext);
         assertThat(actual.getSqlRewriteUnits().size(), is(1));
         assertThat(actual.getSqlRewriteUnits().get(routeUnit).getSql(), is("INSERT INTO tbl VALUES (?)"));
         assertThat(actual.getSqlRewriteUnits().get(routeUnit).getParameters(), is(Collections.singletonList(1)));
@@ -84,12 +84,12 @@ public final class RouteSQLRewriteEngineTest {
     public void assertRewriteWithGroupedParameterBuilderForRouteWithEmptyDataNode() {
         InsertStatementContext statementContext = mock(InsertStatementContext.class);
         when(statementContext.getGroupedParameters()).thenReturn(Collections.singletonList(Collections.singletonList(1)));
-        SQLRewriteContext sqlRewriteContext = new SQLRewriteContext(mock(SchemaMetaData.class), statementContext, "INSERT INTO tbl VALUES (?)", Collections.singletonList(1));
-        RouteResult routeResult = new RouteResult();
+        SQLRewriteContext sqlRewriteContext = new SQLRewriteContext(mock(ShardingSphereSchema.class), statementContext, "INSERT INTO tbl VALUES (?)", Collections.singletonList(1));
         RouteUnit routeUnit = new RouteUnit(new RouteMapper("ds", "ds_0"), Collections.singletonList(new RouteMapper("tbl", "tbl_0")));
-        routeResult.getRouteUnits().add(routeUnit);
-        routeResult.getOriginalDataNodes().add(Collections.emptyList());
-        RouteSQLRewriteResult actual = new RouteSQLRewriteEngine().rewrite(sqlRewriteContext, routeResult);
+        RouteContext routeContext = new RouteContext();
+        routeContext.getRouteUnits().add(routeUnit);
+        routeContext.getOriginalDataNodes().add(Collections.emptyList());
+        RouteSQLRewriteResult actual = new RouteSQLRewriteEngine().rewrite(sqlRewriteContext, routeContext);
         assertThat(actual.getSqlRewriteUnits().size(), is(1));
         assertThat(actual.getSqlRewriteUnits().get(routeUnit).getSql(), is("INSERT INTO tbl VALUES (?)"));
         assertThat(actual.getSqlRewriteUnits().get(routeUnit).getParameters(), is(Collections.singletonList(1)));
@@ -99,12 +99,12 @@ public final class RouteSQLRewriteEngineTest {
     public void assertRewriteWithGroupedParameterBuilderForRouteWithNotSameDataNode() {
         InsertStatementContext statementContext = mock(InsertStatementContext.class);
         when(statementContext.getGroupedParameters()).thenReturn(Collections.singletonList(Collections.singletonList(1)));
-        SQLRewriteContext sqlRewriteContext = new SQLRewriteContext(mock(SchemaMetaData.class), statementContext, "INSERT INTO tbl VALUES (?)", Collections.singletonList(1));
-        RouteResult routeResult = new RouteResult();
+        SQLRewriteContext sqlRewriteContext = new SQLRewriteContext(mock(ShardingSphereSchema.class), statementContext, "INSERT INTO tbl VALUES (?)", Collections.singletonList(1));
         RouteUnit routeUnit = new RouteUnit(new RouteMapper("ds", "ds_0"), Collections.singletonList(new RouteMapper("tbl", "tbl_0")));
-        routeResult.getRouteUnits().add(routeUnit);
-        routeResult.getOriginalDataNodes().add(Collections.singletonList(new DataNode("ds_1.tbl_1")));
-        RouteSQLRewriteResult actual = new RouteSQLRewriteEngine().rewrite(sqlRewriteContext, routeResult);
+        RouteContext routeContext = new RouteContext();
+        routeContext.getRouteUnits().add(routeUnit);
+        routeContext.getOriginalDataNodes().add(Collections.singletonList(new DataNode("ds_1.tbl_1")));
+        RouteSQLRewriteResult actual = new RouteSQLRewriteEngine().rewrite(sqlRewriteContext, routeContext);
         assertThat(actual.getSqlRewriteUnits().size(), is(1));
         assertThat(actual.getSqlRewriteUnits().get(routeUnit).getSql(), is("INSERT INTO tbl VALUES (?)"));
         assertTrue(actual.getSqlRewriteUnits().get(routeUnit).getParameters().isEmpty());

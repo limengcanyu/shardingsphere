@@ -36,10 +36,10 @@ import java.util.Properties;
 
 public final class LocalShardingDatabasesConfiguration implements ExampleConfiguration {
     
-    private final GovernanceConfiguration governanceConfiguration;
+    private final GovernanceConfiguration governanceConfig;
     
-    public LocalShardingDatabasesConfiguration(final GovernanceConfiguration governanceConfiguration) {
-        this.governanceConfiguration = governanceConfiguration;
+    public LocalShardingDatabasesConfiguration(final GovernanceConfiguration governanceConfig) {
+        this.governanceConfig = governanceConfig;
     }
     
     private static KeyGenerateStrategyConfiguration getKeyGeneratorConfiguration() {
@@ -49,7 +49,7 @@ public final class LocalShardingDatabasesConfiguration implements ExampleConfigu
     @Override
     public DataSource getDataSource() throws SQLException {
         return GovernanceShardingSphereDataSourceFactory.createDataSource(
-                createDataSourceMap(), Collections.singleton(createShardingRuleConfiguration()), new Properties(), governanceConfiguration);
+                createDataSourceMap(), Collections.singleton(createShardingRuleConfiguration()), new Properties(), governanceConfig);
     }
     
     private ShardingRuleConfiguration createShardingRuleConfiguration() {
@@ -60,7 +60,7 @@ public final class LocalShardingDatabasesConfiguration implements ExampleConfigu
         result.getBroadcastTables().add("t_address");
         result.setDefaultDatabaseShardingStrategy(new StandardShardingStrategyConfiguration("user_id", "inline"));
         Properties props = new Properties();
-        props.setProperty("algorithm.expression", "demo_ds_${user_id % 2}");
+        props.setProperty("algorithm-expression", "demo_ds_${user_id % 2}");
         result.getShardingAlgorithms() .put("inline", new ShardingSphereAlgorithmConfiguration("INLINE", props));
         result.getKeyGenerators().put("snowflake", new ShardingSphereAlgorithmConfiguration("SNOWFLAKE", getProps()));
         return result;
@@ -85,7 +85,7 @@ public final class LocalShardingDatabasesConfiguration implements ExampleConfigu
     
     private static Properties getProps() {
         Properties result = new Properties();
-        result.setProperty("worker.id", "123");
+        result.setProperty("worker-id", "123");
         return result;
     }
 }

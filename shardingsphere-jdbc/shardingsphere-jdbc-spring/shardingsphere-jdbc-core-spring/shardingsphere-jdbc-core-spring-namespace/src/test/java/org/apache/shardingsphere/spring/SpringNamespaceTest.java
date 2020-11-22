@@ -21,7 +21,7 @@ import org.apache.shardingsphere.driver.jdbc.core.datasource.ShardingSphereDataS
 import org.apache.shardingsphere.encrypt.rule.EncryptRule;
 import org.apache.shardingsphere.infra.datanode.DataNode;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
-import org.apache.shardingsphere.masterslave.rule.MasterSlaveRule;
+import org.apache.shardingsphere.replicaquery.rule.ReplicaQueryRule;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.spring.transaction.ShardingTransactionTypeScanner;
 import org.junit.Test;
@@ -46,13 +46,13 @@ public final class SpringNamespaceTest extends AbstractJUnit4SpringContextTests 
     @Test
     public void assertShardingSphereDataSource() {
         assertDataSourceMap();
-        Collection<ShardingSphereRule> rules = dataSource.getSchemaContexts().getDefaultSchemaContext().getSchema().getRules();
+        Collection<ShardingSphereRule> rules = dataSource.getMetaDataContexts().getDefaultMetaData().getRuleMetaData().getRules();
         assertThat(rules.size(), is(3));
         for (ShardingSphereRule each : rules) {
             if (each instanceof ShardingRule) {
                 assertShardingRule((ShardingRule) each);
-            } else if (each instanceof MasterSlaveRule) {
-                assertMasterSlaveRule((MasterSlaveRule) each);
+            } else if (each instanceof ReplicaQueryRule) {
+                assertReplicaQueryRule((ReplicaQueryRule) each);
             } else if (each instanceof EncryptRule) {
                 assertEncryptRule((EncryptRule) each);
             }
@@ -61,12 +61,12 @@ public final class SpringNamespaceTest extends AbstractJUnit4SpringContextTests 
     
     private void assertDataSourceMap() {
         assertThat(dataSource.getDataSourceMap().size(), is(6));
-        assertTrue(dataSource.getDataSourceMap().containsKey("ds_0_master"));
-        assertTrue(dataSource.getDataSourceMap().containsKey("ds_0_slave_0"));
-        assertTrue(dataSource.getDataSourceMap().containsKey("ds_0_slave_1"));
-        assertTrue(dataSource.getDataSourceMap().containsKey("ds_1_master"));
-        assertTrue(dataSource.getDataSourceMap().containsKey("ds_1_slave_0"));
-        assertTrue(dataSource.getDataSourceMap().containsKey("ds_1_slave_1"));
+        assertTrue(dataSource.getDataSourceMap().containsKey("ds_0_primary"));
+        assertTrue(dataSource.getDataSourceMap().containsKey("ds_0_replica_0"));
+        assertTrue(dataSource.getDataSourceMap().containsKey("ds_0_replica_1"));
+        assertTrue(dataSource.getDataSourceMap().containsKey("ds_1_primary"));
+        assertTrue(dataSource.getDataSourceMap().containsKey("ds_1_replica_0"));
+        assertTrue(dataSource.getDataSourceMap().containsKey("ds_1_replica_1"));
     }
     
     private void assertShardingRule(final ShardingRule rule) {
@@ -74,23 +74,21 @@ public final class SpringNamespaceTest extends AbstractJUnit4SpringContextTests 
         assertThat(rule.getTableRule("t_order").getActualDataNodes(), is(Arrays.asList(
                 new DataNode("ds_0.t_order_0"), new DataNode("ds_0.t_order_1"), new DataNode("ds_0.t_order_2"), new DataNode("ds_0.t_order_3"),
                 new DataNode("ds_1.t_order_0"), new DataNode("ds_1.t_order_1"), new DataNode("ds_1.t_order_2"), new DataNode("ds_1.t_order_3"))));
-        assertThat(rule.getTableRule("t_order").getDatabaseShardingStrategy().getShardingAlgorithm().getProps().getProperty("algorithm.expression"), is("ds_$->{user_id % 2}"));
-        assertThat(rule.getTableRule("t_order").getTableShardingStrategy().getShardingAlgorithm().getProps().getProperty("algorithm.expression"), is("t_order_$->{order_id % 4}"));
     }
     
-    private void assertMasterSlaveRule(final MasterSlaveRule rule) {
+    private void assertReplicaQueryRule(final ReplicaQueryRule rule) {
         assertTrue(rule.findDataSourceRule("ds_0").isPresent());
-        assertThat(rule.findDataSourceRule("ds_0").get().getMasterDataSourceName(), is("ds_0_master"));
-        assertThat(rule.findDataSourceRule("ds_0").get().getSlaveDataSourceNames(), is(Arrays.asList("ds_0_slave_0", "ds_0_slave_1")));
+        assertThat(rule.findDataSourceRule("ds_0").get().getPrimaryDataSourceName(), is("ds_0_primary"));
+        assertThat(rule.findDataSourceRule("ds_0").get().getReplicaDataSourceNames(), is(Arrays.asList("ds_0_replica_0", "ds_0_replica_1")));
         assertTrue(rule.findDataSourceRule("ds_1").isPresent());
-        assertThat(rule.findDataSourceRule("ds_1").get().getMasterDataSourceName(), is("ds_1_master"));
-        assertThat(rule.findDataSourceRule("ds_1").get().getSlaveDataSourceNames(), is(Arrays.asList("ds_1_slave_0", "ds_1_slave_1")));
+        assertThat(rule.findDataSourceRule("ds_1").get().getPrimaryDataSourceName(), is("ds_1_primary"));
+        assertThat(rule.findDataSourceRule("ds_1").get().getReplicaDataSourceNames(), is(Arrays.asList("ds_1_replica_0", "ds_1_replica_1")));
     }
     
     private void assertEncryptRule(final EncryptRule rule) {
         assertThat(rule.getCipherColumn("t_order", "pwd"), is("pwd_cipher"));
         assertTrue(rule.findEncryptor("t_order", "pwd").isPresent());
-        assertThat(rule.findEncryptor("t_order", "pwd").get().getProps().getProperty("aes.key.value"), is("123456"));
+        assertThat(rule.findEncryptor("t_order", "pwd").get().getProps().getProperty("aes-key-value"), is("123456"));
     }
     
     @Test

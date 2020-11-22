@@ -22,7 +22,8 @@ import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.shardingsphere.driver.governance.internal.datasource.GovernanceShardingSphereDataSource;
 import org.apache.shardingsphere.encrypt.api.config.EncryptRuleConfiguration;
 import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
-import org.apache.shardingsphere.infra.context.SchemaContexts;
+import org.apache.shardingsphere.infra.config.properties.ConfigurationPropertyKey;
+import org.apache.shardingsphere.infra.context.metadata.MetaDataContexts;
 import org.apache.shardingsphere.spring.boot.governance.registry.TestGovernanceRepository;
 import org.apache.shardingsphere.spring.boot.governance.util.EmbedTestingServer;
 import org.junit.BeforeClass;
@@ -35,7 +36,9 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.annotation.Resource;
 import javax.sql.DataSource;
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.stream.Collectors;
@@ -64,29 +67,29 @@ public class GovernanceSpringBootRegistryEncryptTest {
         String dataSource = readYAML(DATA_SOURCE_FILE);
         String encryptRule = readYAML(ENCRYPT_RULE_FILE);
         TestGovernanceRepository repository = new TestGovernanceRepository();
-        repository.persist("/config/schema/logic_db/datasource", dataSource);
-        repository.persist("/config/schema/logic_db/rule", encryptRule);
-        repository.persist("/config/props", "sql.show: 'true'\n");
-        repository.persist("/registry/datasources", "");
+        repository.persist("/metadata/logic_db/datasource", dataSource);
+        repository.persist("/metadata/logic_db/rule", encryptRule);
+        repository.persist("/props", ConfigurationPropertyKey.SQL_SHOW.getKey() + ": 'true'\n");
+        repository.persist("/states/datanodes", "");
     }
     
     @Test
     public void assertWithEncryptDataSource() throws NoSuchFieldException, IllegalAccessException {
         assertTrue(dataSource instanceof GovernanceShardingSphereDataSource);
-        Field field = GovernanceShardingSphereDataSource.class.getDeclaredField("schemaContexts");
+        Field field = GovernanceShardingSphereDataSource.class.getDeclaredField("metaDataContexts");
         field.setAccessible(true);
-        SchemaContexts schemaContexts = (SchemaContexts) field.get(dataSource);
-        BasicDataSource embedDataSource = (BasicDataSource) schemaContexts.getDefaultSchemaContext().getSchema().getDataSources().values().iterator().next();
+        MetaDataContexts metaDataContexts = (MetaDataContexts) field.get(dataSource);
+        BasicDataSource embedDataSource = (BasicDataSource) metaDataContexts.getDefaultMetaData().getResource().getDataSources().values().iterator().next();
         assertThat(embedDataSource.getMaxTotal(), is(100));
         assertThat(embedDataSource.getUsername(), is("sa"));
-        EncryptRuleConfiguration configuration = (EncryptRuleConfiguration) schemaContexts.getDefaultSchemaContext().getSchema().getConfigurations().iterator().next();
-        assertThat(configuration.getEncryptors().size(), is(1));
-        ShardingSphereAlgorithmConfiguration encryptAlgorithmConfiguration = configuration.getEncryptors().get("order_encrypt");
-        assertThat(encryptAlgorithmConfiguration, instanceOf(ShardingSphereAlgorithmConfiguration.class));
-        assertThat(encryptAlgorithmConfiguration.getType(), is("AES"));
+        EncryptRuleConfiguration config = (EncryptRuleConfiguration) metaDataContexts.getDefaultMetaData().getRuleMetaData().getConfigurations().iterator().next();
+        assertThat(config.getEncryptors().size(), is(1));
+        ShardingSphereAlgorithmConfiguration encryptAlgorithmConfig = config.getEncryptors().get("order_encrypt");
+        assertThat(encryptAlgorithmConfig, instanceOf(ShardingSphereAlgorithmConfiguration.class));
+        assertThat(encryptAlgorithmConfig.getType(), is("AES"));
     }
     
-    @SneakyThrows
+    @SneakyThrows({IOException.class, URISyntaxException.class})
     private static String readYAML(final String yamlFile) {
         return Files.readAllLines(Paths.get(ClassLoader.getSystemResource(yamlFile).toURI())).stream().map(each -> each + System.lineSeparator()).collect(Collectors.joining());
     }

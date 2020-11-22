@@ -8,7 +8,7 @@ weight = 3
 ```xml
 <dependency>
     <groupId>org.apache.shardingsphere</groupId>
-    <artifactId>shardingsphere-jdbc-spring-boot-starter</artifactId>
+    <artifactId>shardingsphere-jdbc-core-spring-boot-starter</artifactId>
     <version>${shardingsphere.version}</version>
 </dependency>
 ```
@@ -49,9 +49,9 @@ spring.shardingsphere.rules.sharding.tables.t_order.table-strategy.standard.shar
 
 # Configure sharding algorithm
 spring.shardingsphere.rules.sharding.sharding-algorithms.database_inline.type=INLINE
-spring.shardingsphere.rules.sharding.sharding-algorithms.database_inline.props.algorithm.expression=ds_${user_id % 2}
+spring.shardingsphere.rules.sharding.sharding-algorithms.database_inline.props.algorithm-expression=ds_${user_id % 2}
 spring.shardingsphere.rules.sharding.sharding-algorithms.table_inline.type=INLINE
-spring.shardingsphere.rules.sharding.sharding-algorithms.table_inline.props.algorithm.expression=t_order_${order_id % 2}
+spring.shardingsphere.rules.sharding.sharding-algorithms.table_inline.props.algorithm-expression=t_order_${order_id % 2}
 ```
 
 ### Use JNDI Data Source

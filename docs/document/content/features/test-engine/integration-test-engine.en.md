@@ -1,5 +1,5 @@
 +++
-pre = "<b>3.10.2. </b>"
+pre = "<b>3.9.2. </b>"
 title = "Integration Test Engine"
 weight = 2
 +++
@@ -12,7 +12,7 @@ The `Parameterized` in JUnit will collect all test data, and pass to test method
 ### Configuration
  
   - environment type
-    - /shardingsphere-test-suite/src/test/resources/integrate/env.properties
+    - /shardingsphere-test-suite/src/test/resources/integrate/env-jdbc-local.properties
     - /shardingsphere-test-suite/src/test/resources/integrate/env/`SQL-TYPE`/dataset.xml
     - /shardingsphere-test-suite/src/test/resources/integrate/env/`SQL-TYPE`/schema.xml
   - test case type
@@ -25,14 +25,14 @@ The `Parameterized` in JUnit will collect all test data, and pass to test method
 
 Integration test depends on existed database environment, developer need to setup the configuration file for corresponding database to test: 
 
-Firstly, setup configuration file `/shardingsphere-test-suite/src/test/resources/integrate/env.properties`, for example: 
+Firstly, setup configuration file `/shardingsphere-test-suite/src/test/resources/integrate/env-jdbc-local.properties`, for example: 
 
 ```properties
 # the switch for PK, concurrent, column index testing and so on
 run.additional.cases=false
 
 # sharding rule, could define multiple rules
-sharding.rule.type=db,tbl,dbtbl_with_masterslave,masterslave
+sharding.rule.type=db,tbl,dbtbl_with_replica_query_,replica_query_
 
 # database type, could define multiple databases(H2,MySQL,Oracle,SQLServer,PostgreSQL)
 databases=MySQL,PostgreSQL
@@ -47,7 +47,7 @@ mysql.password=root
 postgresql.host=db.psql
 postgresql.port=5432
 postgresql.username=postgres
-postgresql.password=
+postgresql.password=postgres
 
 ## SQLServer configuration
 sqlserver.host=db.mssql

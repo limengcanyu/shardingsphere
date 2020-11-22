@@ -22,8 +22,6 @@ import org.apache.shardingsphere.scaling.core.config.InventoryDumperConfiguratio
 import org.apache.shardingsphere.scaling.core.config.SyncConfiguration;
 import org.apache.shardingsphere.scaling.core.datasource.DataSourceManager;
 import org.apache.shardingsphere.scaling.core.job.ShardingScalingJob;
-import org.apache.shardingsphere.scaling.core.job.position.IncrementalPosition;
-import org.apache.shardingsphere.scaling.core.job.position.InventoryPosition;
 import org.apache.shardingsphere.scaling.core.job.position.PositionManager;
 import org.apache.shardingsphere.scaling.core.job.position.resume.ResumeBreakPointManager;
 import org.apache.shardingsphere.scaling.core.job.preparer.utils.JobPrepareUtil;
@@ -34,6 +32,7 @@ import org.apache.shardingsphere.scaling.core.job.task.inventory.InventoryDataSc
 import org.apache.shardingsphere.scaling.core.metadata.MetaDataManager;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -61,28 +60,28 @@ public final class SyncPositionResumer {
     }
     
     private void resumeInventoryPosition(final ShardingScalingJob shardingScalingJob, final DataSourceManager dataSourceManager, final ResumeBreakPointManager resumeBreakPointManager) {
-        List<ScalingTask<InventoryPosition>> allInventoryDataTasks = getAllInventoryDataTasks(shardingScalingJob, dataSourceManager, resumeBreakPointManager);
-        for (Collection<ScalingTask<InventoryPosition>> each : JobPrepareUtil.groupInventoryDataTasks(shardingScalingJob.getSyncConfigurations().get(0).getConcurrency(), allInventoryDataTasks)) {
+        List<ScalingTask> allInventoryDataTasks = getAllInventoryDataTasks(shardingScalingJob, dataSourceManager, resumeBreakPointManager);
+        for (Collection<ScalingTask> each : JobPrepareUtil.groupInventoryDataTasks(shardingScalingJob.getSyncConfigurations().get(0).getConcurrency(), allInventoryDataTasks)) {
             shardingScalingJob.getInventoryDataTasks().add(syncTaskFactory.createInventoryDataSyncTaskGroup(each));
         }
     }
     
-    private List<ScalingTask<InventoryPosition>> getAllInventoryDataTasks(
-            final ShardingScalingJob shardingScalingJob, final DataSourceManager dataSourceManager, final ResumeBreakPointManager resumeBreakPointManager) {
-        List<ScalingTask<InventoryPosition>> result = new LinkedList<>();
+    private List<ScalingTask> getAllInventoryDataTasks(final ShardingScalingJob shardingScalingJob, 
+                                                                          final DataSourceManager dataSourceManager, final ResumeBreakPointManager resumeBreakPointManager) {
+        List<ScalingTask> result = new LinkedList<>();
         for (SyncConfiguration each : shardingScalingJob.getSyncConfigurations()) {
             MetaDataManager metaDataManager = new MetaDataManager(dataSourceManager.getDataSource(each.getDumperConfiguration().getDataSourceConfiguration()));
-            for (Entry<String, PositionManager<InventoryPosition>> entry : getInventoryPositionMap(each.getDumperConfiguration(), resumeBreakPointManager).entrySet()) {
+            for (Entry<String, PositionManager> entry : getInventoryPositionMap(each.getDumperConfiguration(), resumeBreakPointManager).entrySet()) {
                 result.add(syncTaskFactory.createInventoryDataSyncTask(newInventoryDumperConfiguration(each.getDumperConfiguration(), metaDataManager, entry), each.getImporterConfiguration()));
             }
         }
         return result;
     }
     
-    private InventoryDumperConfiguration newInventoryDumperConfiguration(
-            final DumperConfiguration dumperConfiguration, final MetaDataManager metaDataManager, final Entry<String, PositionManager<InventoryPosition>> entry) {
+    private InventoryDumperConfiguration newInventoryDumperConfiguration(final DumperConfiguration dumperConfig, 
+                                                                         final MetaDataManager metaDataManager, final Entry<String, PositionManager> entry) {
         String[] splitTable = entry.getKey().split("#");
-        InventoryDumperConfiguration result = new InventoryDumperConfiguration(dumperConfiguration);
+        InventoryDumperConfiguration result = new InventoryDumperConfiguration(dumperConfig);
         result.setTableName(splitTable[0].split("\\.")[1]);
         result.setPositionManager(entry.getValue());
         if (2 == splitTable.length) {
@@ -92,12 +91,11 @@ public final class SyncPositionResumer {
         return result;
     }
     
-    private Map<String, PositionManager<InventoryPosition>> getInventoryPositionMap(
-            final DumperConfiguration dumperConfiguration, final ResumeBreakPointManager resumeBreakPointManager) {
-        Pattern pattern = Pattern.compile(String.format("%s\\.\\w+(#\\d+)?", dumperConfiguration.getDataSourceName()));
+    private Map<String, PositionManager> getInventoryPositionMap(final DumperConfiguration dumperConfig, final ResumeBreakPointManager resumeBreakPointManager) {
+        Pattern pattern = Pattern.compile(String.format("%s\\.\\w+(#\\d+)?", dumperConfig.getDataSourceName()));
         return resumeBreakPointManager.getInventoryPositionManagerMap().entrySet().stream()
                 .filter(entry -> pattern.matcher(entry.getKey()).find())
-                .collect(Collectors.toMap(Entry::getKey, Map.Entry::getValue));
+                .collect(Collectors.toMap(Entry::getKey, Map.Entry::getValue, (oldValue, currentValue) -> oldValue, LinkedHashMap::new));
     }
 
     private void resumeIncrementalPosition(final ShardingScalingJob shardingScalingJob, final ResumeBreakPointManager resumeBreakPointManager) {
@@ -118,8 +116,8 @@ public final class SyncPositionResumer {
         persistInventoryPosition(shardingScalingJob.getInventoryDataTasks(), resumeBreakPointManager);
     }
     
-    private void persistInventoryPosition(final List<ScalingTask<InventoryPosition>> inventoryDataTasks, final ResumeBreakPointManager resumeBreakPointManager) {
-        for (ScalingTask<InventoryPosition> each : inventoryDataTasks) {
+    private void persistInventoryPosition(final List<ScalingTask> inventoryDataTasks, final ResumeBreakPointManager resumeBreakPointManager) {
+        for (ScalingTask each : inventoryDataTasks) {
             if (each instanceof InventoryDataScalingTaskGroup) {
                 putInventoryDataScalingTask(((InventoryDataScalingTaskGroup) each).getScalingTasks(), resumeBreakPointManager);
             }
@@ -127,14 +125,14 @@ public final class SyncPositionResumer {
         resumeBreakPointManager.persistInventoryPosition();
     }
     
-    private void putInventoryDataScalingTask(final Collection<ScalingTask<InventoryPosition>> scalingTasks, final ResumeBreakPointManager resumeBreakPointManager) {
-        for (ScalingTask<InventoryPosition> each : scalingTasks) {
+    private void putInventoryDataScalingTask(final Collection<ScalingTask> scalingTasks, final ResumeBreakPointManager resumeBreakPointManager) {
+        for (ScalingTask each : scalingTasks) {
             resumeBreakPointManager.getInventoryPositionManagerMap().put(each.getTaskId(), each.getPositionManager());
         }
     }
     
-    private void persistIncrementalPosition(final List<ScalingTask<IncrementalPosition>> incrementalDataTasks, final ResumeBreakPointManager resumeBreakPointManager) {
-        for (ScalingTask<IncrementalPosition> each : incrementalDataTasks) {
+    private void persistIncrementalPosition(final List<ScalingTask> incrementalDataTasks, final ResumeBreakPointManager resumeBreakPointManager) {
+        for (ScalingTask each : incrementalDataTasks) {
             resumeBreakPointManager.getIncrementalPositionManagerMap().put(each.getTaskId(), each.getPositionManager());
         }
         resumeBreakPointManager.persistIncrementalPosition();

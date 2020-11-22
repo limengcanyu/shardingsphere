@@ -19,23 +19,23 @@ package org.apache.shardingsphere.infra.rule;
 
 import org.apache.shardingsphere.infra.datanode.DataNode;
 import org.apache.shardingsphere.infra.datanode.DataNodes;
-import org.apache.shardingsphere.infra.rule.fixture.TestDataSourceRoutedRule;
-import org.apache.shardingsphere.infra.rule.fixture.TestShardingRule;
-import org.apache.shardingsphere.infra.rule.fixture.TestShardingSphereRule;
-import org.apache.shardingsphere.infra.rule.fixture.TestTableRule;
+import org.apache.shardingsphere.infra.rule.type.DataNodeContainedRule;
+import org.apache.shardingsphere.infra.rule.type.DataSourceContainedRule;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import org.junit.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public final class DataNodesTest {
     
@@ -43,11 +43,11 @@ public final class DataNodesTest {
     
     private final String logicTableName2 = "dept";
     
-    private final Collection<String> dataSourceNames1 = Arrays.asList("master_db_1", "master_db_2", "slave_db_1", "slave_db_2");
+    private final Collection<String> dataSourceNames1 = Arrays.asList("primary_db_1", "primary_db_2", "replica_db_1", "replica_db_2");
     
-    private final Collection<String> dataSourceNames2 = Arrays.asList("master_db_3", "slave_db_3");
+    private final Collection<String> dataSourceNames2 = Arrays.asList("primary_db_3", "replica_db_3");
     
-    private final String logicDataSourceName = "master_db_1";
+    private final String logicDataSourceName = "primary_db_1";
     
     private final Collection<String> replicaDataSourceNames = Arrays.asList("route_db_1", "route_db_2");
     
@@ -77,24 +77,26 @@ public final class DataNodesTest {
     }
     
     private DataNodes getRoutedRuleDataNodes() {
-        TestTableRule tableRule1 = new TestTableRule(dataSourceNames1, logicTableName1);
-        TestTableRule tableRule2 = new TestTableRule(dataSourceNames2, logicTableName2);
-        List<TestTableRule> tableRules = Arrays.asList(tableRule1, tableRule2);
-        ShardingSphereRule rule1 = new TestShardingRule(tableRules);
+        Map<String, Collection<DataNode>> nodeMap = new HashMap<>();
+        nodeMap.put(logicTableName1, getExpectedDataNodes(dataSourceNames1, logicTableName1));
+        nodeMap.put(logicTableName2, getExpectedDataNodes(dataSourceNames2, logicTableName2));
+        DataNodeContainedRule rule1 = mock(DataNodeContainedRule.class);
+        when(rule1.getAllDataNodes()).thenReturn(nodeMap);
         Map<String, Collection<String>> dataSourceMapper = Collections.singletonMap(logicDataSourceName, replicaDataSourceNames);
-        TestDataSourceRoutedRule rule2 = new TestDataSourceRoutedRule(dataSourceMapper);
+        DataSourceContainedRule rule2 = mock(DataSourceContainedRule.class);
+        when(rule2.getDataSourceMapper()).thenReturn(dataSourceMapper);
         return new DataNodes(Arrays.asList(rule1, rule2));
     }
     
     private DataNodes getNonRoutedRuleDataNodes() {
-        return new DataNodes(Collections.singleton(new TestShardingSphereRule()));
+        return new DataNodes(Collections.singleton(mock(ShardingSphereRule.class)));
     }
     
     private Collection<DataNode> getExpectedDataNodes(final Collection<String> dataSourceNames, final String logicTableName) {
         Collection<DataNode> result = new LinkedList<>();
         for (String each : dataSourceNames) {
             if (logicDataSourceName.equals(each)) {
-                replicaDataSourceNames.stream().forEach(a -> result.add(new DataNode(a, logicTableName)));
+                replicaDataSourceNames.forEach(dataSourceName -> result.add(new DataNode(dataSourceName, logicTableName)));
             } else {
                 result.add(new DataNode(each, logicTableName));
             }

@@ -17,12 +17,14 @@
 
 package org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal;
 
+import lombok.ToString;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.AbstractSQLStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dal.DALStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.MySQLStatement;
 
 /**
- * Kill statement.
+ * MySQL kill statement.
  */
+@ToString
 public final class MySQLKillStatement extends AbstractSQLStatement implements DALStatement, MySQLStatement {
 }

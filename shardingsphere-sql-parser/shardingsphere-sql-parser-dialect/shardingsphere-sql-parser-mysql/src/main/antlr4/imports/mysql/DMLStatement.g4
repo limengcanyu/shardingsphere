@@ -20,51 +20,51 @@ grammar DMLStatement;
 import Symbol, Keyword, MySQLKeyword, Literals, BaseRule;
 
 insert
-    : INSERT insertSpecification_ INTO? tableName partitionNames_? (insertValuesClause | setAssignmentsClause | insertSelectClause) onDuplicateKeyClause?
+    : INSERT insertSpecification INTO? tableName partitionNames? (insertValuesClause | setAssignmentsClause | insertSelectClause) onDuplicateKeyClause?
     ;
 
-insertSpecification_
+insertSpecification
     : (LOW_PRIORITY | DELAYED | HIGH_PRIORITY)? IGNORE?
     ;
 
 insertValuesClause
-    : columnNames? (VALUES | VALUE) (assignmentValues (COMMA_ assignmentValues)* | rowConstructorList) valueReference_?
+    : (LP_ RP_ | columnNames)? (VALUES | VALUE) (assignmentValues (COMMA_ assignmentValues)* | rowConstructorList) valueReference?
     ;
 
 insertSelectClause
-    : valueReference_? columnNames? select
+    : valueReference? columnNames? select
     ;
 
 onDuplicateKeyClause
     : ON DUPLICATE KEY UPDATE assignment (COMMA_ assignment)*
     ;
 
-valueReference_
-    : AS alias derivedColumns_?
+valueReference
+    : AS alias derivedColumns?
     ;
 
-derivedColumns_
+derivedColumns
     : LP_ alias (COMMA_ alias)* RP_
     ;
 
 replace
-    : REPLACE replaceSpecification_? INTO? tableName partitionNames_? (replaceValuesClause | setAssignmentsClause | replaceSelectClause)
+    : REPLACE replaceSpecification? INTO? tableName partitionNames? (replaceValuesClause | setAssignmentsClause | replaceSelectClause)
     ;
 
-replaceSpecification_
+replaceSpecification
     : LOW_PRIORITY | DELAYED
     ;
 
 replaceValuesClause
-    : columnNames? (VALUES | VALUE) (assignmentValues (COMMA_ assignmentValues)* | rowConstructorList) valueReference_?
+    : columnNames? (VALUES | VALUE) (assignmentValues (COMMA_ assignmentValues)* | rowConstructorList) valueReference?
     ;
 
 replaceSelectClause
-    : valueReference_? columnNames? select
+    : valueReference? columnNames? select
     ;
 
 update
-    : withClause_? UPDATE updateSpecification_ tableReferences setAssignmentsClause whereClause? orderByClause? limitClause?
+    : withClause? UPDATE updateSpecification_ tableReferences setAssignmentsClause whereClause? orderByClause? limitClause?
     ;
 
 updateSpecification_
@@ -76,7 +76,7 @@ assignment
     ;
 
 setAssignmentsClause
-    : valueReference_? SET assignment (COMMA_ assignment)*
+    : valueReference? SET assignment (COMMA_ assignment)*
     ;
 
 assignmentValues
@@ -93,27 +93,55 @@ blobValue
     ;
 
 delete
-    : DELETE deleteSpecification_ (singleTableClause | multipleTablesClause) whereClause? orderByClause? limitClause?
+    : DELETE deleteSpecification (singleTableClause | multipleTablesClause) whereClause? orderByClause? limitClause?
     ;
 
-deleteSpecification_
+deleteSpecification
     : LOW_PRIORITY? QUICK? IGNORE?
     ;
 
 singleTableClause
-    : FROM tableName (AS? alias)? partitionNames_?
+    : FROM tableName (AS? alias)? partitionNames?
     ;
 
 multipleTablesClause
-    : multipleTableNames FROM tableReferences | FROM multipleTableNames USING tableReferences
+    : tableAliasRefList FROM tableReferences | FROM tableAliasRefList USING tableReferences
     ;
 
-multipleTableNames
-    : tableName DOT_ASTERISK_? (COMMA_ tableName DOT_ASTERISK_?)*
+select
+    : queryExpression lockClauseList?
+    | queryExpressionParens
+    | selectWithInto
     ;
 
-select 
-    : withClause_? unionClause
+selectWithInto
+    : LP_ selectWithInto RP_
+    | queryExpression selectIntoExpression lockClauseList?
+    | queryExpression lockClauseList selectIntoExpression
+    ;
+
+queryExpression
+    : withClause? (queryExpressionBody | queryExpressionParens) orderByClause? limitClause?
+    ;
+
+queryExpressionBody
+    : queryPrimary
+    | queryExpressionParens UNION unionOption? (queryPrimary | queryExpressionParens)
+    | queryExpressionBody UNION unionOption? (queryPrimary | queryExpressionParens)
+    ;
+
+queryExpressionParens
+    : LP_ (queryExpressionParens | queryExpression lockClauseList?) RP_
+    ;
+
+queryPrimary
+    : querySpecification
+    | tableValueConstructor
+    | explicitTable
+    ;
+
+querySpecification
+    : SELECT selectSpecification* projections selectIntoExpression? fromClause? whereClause? groupByClause? havingClause? windowClause?
     ;
 
 call
@@ -155,10 +183,10 @@ loadDataStatement
       (LOW_PRIORITY | CONCURRENT)? LOCAL? 
       INFILE STRING_
       (REPLACE | IGNORE)?
-      INTO TABLE tableName partitionNames_?
+      INTO TABLE tableName partitionNames?
       (CHARACTER SET identifier)?
-      ((FIELDS | COLUMNS) selectFieldsInto_+ )?
-      ( LINES selectLinesInto_+ )?
+      ((FIELDS | COLUMNS) selectFieldsInto+ )?
+      ( LINES selectLinesInto+ )?
       ( IGNORE numberLiterals (LINES | ROWS) )?
       fieldOrVarSpec?
       (setAssignmentsClause)?
@@ -177,12 +205,12 @@ loadXmlStatement
       (setAssignmentsClause)?
     ;
 
-tableStatement
-    : TABLE tableName (ORDER BY columnName)? (LIMIT NUMBER_ (OFFSET NUMBER_)?)?
+explicitTable
+    : TABLE tableName
     ;
 
-valuesStatement
-    : VALUES rowConstructorList (ORDER BY columnDesignator)? (LIMIT BY NUMBER_)?
+tableValueConstructor
+    : VALUES rowConstructorList
     ;
 
 columnDesignator
@@ -193,20 +221,12 @@ rowConstructorList
     : ROW assignmentValues (COMMA_ ROW assignmentValues)*
     ;
 
-withClause_
-    : WITH RECURSIVE? cteClause_ (COMMA_ cteClause_)*
+withClause
+    : WITH RECURSIVE? cteClause (COMMA_ cteClause)*
     ;
 
-cteClause_
-    : ignoredIdentifier_ columnNames? AS subquery
-    ;
-
-unionClause
-    : selectClause (UNION (ALL | DISTINCT)? selectClause)*
-    ;
-
-selectClause
-    : LP_? SELECT selectSpecification* projections selectIntoExpression_? fromClause? whereClause? groupByClause? havingClause? windowClause_? orderByClause? limitClause? selectIntoExpression_? lockClause? RP_?
+cteClause
+    : ignoredIdentifier columnNames? AS subquery
     ;
 
 selectSpecification
@@ -234,41 +254,55 @@ qualifiedShorthand
     ;
 
 fromClause
-    : FROM tableReferences
+    : FROM (DUAL | tableReferences)
     ;
 
 tableReferences
-    : escapedTableReference (COMMA_ escapedTableReference)*
+    : tableReference (COMMA_ tableReference)*
     ;
 
 escapedTableReference
-    : tableReference  | LBE_ OJ tableReference RBE_
-    ;
-
-tableReference
     : tableFactor joinedTable*
     ;
 
-tableFactor
-    : tableName partitionNames_? (AS? alias)? indexHintList_? | subquery AS? alias columnNames? | LP_ tableReferences RP_
+tableReference
+    : (tableFactor | LBE_ OJ escapedTableReference RBE_) joinedTable*
     ;
 
-partitionNames_ 
+tableFactor
+    : tableName partitionNames? (AS? alias)? indexHintList? | subquery AS? alias columnNames? | LP_ tableReferences RP_
+    ;
+
+partitionNames
     : PARTITION LP_ identifier (COMMA_ identifier)* RP_
     ;
 
-indexHintList_
-    : indexHint_ (COMMA_ indexHint_)*
+indexHintList
+    : indexHint (COMMA_ indexHint)*
     ;
 
-indexHint_
+indexHint
     : (USE | IGNORE | FORCE) (INDEX | KEY) (FOR (JOIN | ORDER BY | GROUP BY))? LP_ indexName (COMMA_ indexName)* RP_
     ;
 
 joinedTable
-    : ((INNER | CROSS)? JOIN | STRAIGHT_JOIN) tableFactor joinSpecification?
-    | (LEFT | RIGHT) OUTER? JOIN tableFactor joinSpecification
-    | NATURAL (INNER | (LEFT | RIGHT) (OUTER))? JOIN tableFactor
+    : innerJoinType tableReference joinSpecification?
+    | outerJoinType tableReference joinSpecification
+    | naturalJoinType tableFactor
+    ;
+
+innerJoinType
+    : (INNER | CROSS)? JOIN
+    | STRAIGHT_JOIN
+    ;
+
+outerJoinType
+    : (LEFT | RIGHT) OUTER? JOIN
+    ;
+
+naturalJoinType
+    : NATURAL INNER? JOIN
+    | NATURAL (LEFT | RIGHT) OUTER? JOIN
     ;
 
 joinSpecification
@@ -299,31 +333,56 @@ limitOffset
     : numberLiterals | parameterMarker
     ;
 
-windowClause_
-    : WINDOW windowItem_ (COMMA_ windowItem_)*
+windowClause
+    : WINDOW windowItem (COMMA_ windowItem)*
     ;
 
-windowItem_
-    : ignoredIdentifier_ AS LP_ windowSpecification_ RP_
+windowItem
+    : ignoredIdentifier AS LP_ windowSpecification RP_
     ;
 
 subquery
-    : LP_ unionClause RP_
+    : queryExpressionParens
     ;
 
-selectLinesInto_
+selectLinesInto
     : STARTING BY STRING_ | TERMINATED BY STRING_
     ;
 
-selectFieldsInto_
+selectFieldsInto
     : TERMINATED BY STRING_ | OPTIONALLY? ENCLOSED BY STRING_ | ESCAPED BY STRING_
     ;
 
-selectIntoExpression_
+selectIntoExpression
     : INTO variable (COMMA_ variable )* | INTO DUMPFILE STRING_
-    | (INTO OUTFILE STRING_ (CHARACTER SET IDENTIFIER_)?((FIELDS | COLUMNS) selectFieldsInto_+)? (LINES selectLinesInto_+)?)
+    | (INTO OUTFILE STRING_ (CHARACTER SET IDENTIFIER_)?((FIELDS | COLUMNS) selectFieldsInto+)? (LINES selectLinesInto+)?)
     ;
 
 lockClause
-    : FOR UPDATE | LOCK IN SHARE MODE
+    : FOR lockStrength tableLockingList? lockedRowAction?
+    | LOCK IN SHARE MODE
+    ;
+
+lockClauseList
+    : lockClause+
+    ;
+
+lockStrength
+    : UPDATE | SHARE
+    ;
+
+lockedRowAction
+    : SKIP_SYMBOL LOCKED | NOWAIT
+    ;
+
+tableLockingList
+    : OF tableAliasRefList
+    ;
+
+tableIdentOptWild
+    : tableName DOT_ASTERISK_?
+    ;
+
+tableAliasRefList
+    : tableIdentOptWild (COMMA_ tableIdentOptWild)*
     ;

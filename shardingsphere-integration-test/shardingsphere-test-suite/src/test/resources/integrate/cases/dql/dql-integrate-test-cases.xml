@@ -227,7 +227,7 @@
     </dql-test-case>
     
     <!--<dql-test-case sql="SELECT date_format(creation_date,  '%%y-%%m-%%d') as creation_date, count(*) as c_number FROM `t_order_item` WHERE order_id in (?, ?) GROUP BY date_format(creation_date, '%%y-%%m-%%d')" db-types="MySQL">-->
-        <!--<assertion sharding-rule-type="dbtbl_with_masterslave" parameters="1000:int, 1100:int" expected-data-file="select_group_by_with_date_function.xml" />-->
+        <!--<assertion sharding-rule-type="dbtbl_with_replica_query" parameters="1000:int, 1100:int" expected-data-file="select_group_by_with_date_function.xml" />-->
     <!--</dql-test-case>-->
     
     <dql-test-case sql="SELECT * FROM t_order WHERE order_id = ? OR order_id = ?">
@@ -404,18 +404,15 @@
     <dql-test-case sql="SELECT status as 'status' FROM t_order" db-types="MySQL">
         <assertion expected-data-file="select_alias_as_single_quote_string.xml" />
     </dql-test-case>
+    
+    <!-- // TODO -->
+<!--    <dql-test-case sql="SELECT DISTINCT item_id FROM t_order_item">-->
+<!--        <assertion expected-data-file="select_distinct_with_single_column_without_order_by.xml" />-->
+<!--    </dql-test-case>-->
 
-    <dql-test-case sql="SELECT status as &quot;status&quot; FROM t_order" db-types="MySQL">
-        <assertion expected-data-file="select_alias_as_single_quote_string.xml" />
-    </dql-test-case>
-
-    <dql-test-case sql="SELECT DISTINCT item_id FROM t_order_item">
-        <assertion expected-data-file="select_distinct_with_single_column_without_order_by.xml" />
-    </dql-test-case>
-
-    <dql-test-case sql="SELECT DISTINCT order_id, user_id, status FROM t_order">
-        <assertion expected-data-file="select_distinct_with_multi_column_without_order_by.xml" />
-    </dql-test-case>
+<!--    <dql-test-case sql="SELECT DISTINCT order_id, user_id, status FROM t_order">-->
+<!--        <assertion expected-data-file="select_distinct_with_multi_column_without_order_by.xml" />-->
+<!--    </dql-test-case>-->
     
     <!-- // TODO -->
     <!--<dql-test-case sql="SELECT DISTINCT t_order.order_id FROM t_order order by t_order.order_id">-->
@@ -454,9 +451,10 @@
         <assertion expected-data-file="select_distinct_with_count.xml" />
     </dql-test-case>
     
-    <dql-test-case sql="SELECT AVG(DISTINCT order_id) FROM t_order WHERE order_id &lt; 1100" db-types="MySQL">
-        <assertion expected-data-file="select_distinct_with_avg.xml" />
-    </dql-test-case>
+    <!-- // TODO -->
+<!--    <dql-test-case sql="SELECT AVG(DISTINCT order_id) FROM t_order WHERE order_id &lt; 1100" db-types="MySQL">-->
+<!--        <assertion expected-data-file="select_distinct_with_avg.xml" />-->
+<!--    </dql-test-case>-->
     
     <dql-test-case sql="SELECT DISTINCT(item_id) FROM t_order_item ORDER BY item_id">
         <assertion expected-data-file="select_distinct_function.xml" />

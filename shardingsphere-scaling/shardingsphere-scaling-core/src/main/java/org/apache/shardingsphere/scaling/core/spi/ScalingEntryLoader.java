@@ -17,6 +17,8 @@
 
 package org.apache.shardingsphere.scaling.core.spi;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
 
 import java.util.Map;
@@ -25,6 +27,7 @@ import java.util.TreeMap;
 /**
  * Scaling entry loader.
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ScalingEntryLoader {
     
     private static final Map<String, ScalingEntry> SCALING_ENTRY_MAP = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -44,9 +47,9 @@ public final class ScalingEntryLoader {
      * @return scaling entry for target database type
      */
     public static ScalingEntry getScalingEntryByDatabaseType(final String databaseType) {
-        if (!SCALING_ENTRY_MAP.containsKey(databaseType)) {
-            throw new UnsupportedOperationException(String.format("Cannot support database type '%s'", databaseType));
+        if (SCALING_ENTRY_MAP.containsKey(databaseType)) {
+            return SCALING_ENTRY_MAP.get(databaseType);
         }
-        return SCALING_ENTRY_MAP.get(databaseType);
+        throw new UnsupportedOperationException(String.format("Cannot support database type '%s'", databaseType));
     }
 }

@@ -17,7 +17,7 @@
 
 package org.apache.shardingsphere.governance.repository.api;
 
-import org.apache.shardingsphere.infra.spi.type.TypedSPI;
+import org.apache.shardingsphere.infra.spi.typed.TypedSPI;
 import org.apache.shardingsphere.governance.repository.api.config.GovernanceCenterConfiguration;
 import org.apache.shardingsphere.governance.repository.api.listener.DataChangedEventListener;
 
@@ -27,6 +27,16 @@ import java.util.List;
  * Governance repository.
  */
 public interface GovernanceRepository extends TypedSPI {
+    
+    /**
+     * Path separator.
+     */
+    String PATH_SEPARATOR = "/";
+    
+    /**
+     * Dot separator.
+     */
+    String DOT_SEPARATOR = ".";
     
     /**
      * Initialize governance center.

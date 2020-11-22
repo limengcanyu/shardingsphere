@@ -77,7 +77,7 @@ public final class SnowflakeKeyGenerateAlgorithmTest {
         SnowflakeKeyGenerateAlgorithm keyGenerateAlgorithm = new SnowflakeKeyGenerateAlgorithm();
         SnowflakeKeyGenerateAlgorithm.setTimeService(new FixedTimeService(5));
         Properties props = new Properties();
-        props.setProperty("max.vibration.offset", "3");
+        props.setProperty("max-vibration-offset", "3");
         keyGenerateAlgorithm.setProps(props);
         keyGenerateAlgorithm.init();
         assertThat(keyGenerateAlgorithm.generateKey(), is(0L));
@@ -92,7 +92,7 @@ public final class SnowflakeKeyGenerateAlgorithmTest {
         SnowflakeKeyGenerateAlgorithm keyGenerateAlgorithm = new SnowflakeKeyGenerateAlgorithm();
         Properties props = new Properties();
         SnowflakeKeyGenerateAlgorithm.setTimeService(new TimeService());
-        props.setProperty("max.vibration.offset", String.valueOf(3));
+        props.setProperty("max-vibration-offset", String.valueOf(3));
         keyGenerateAlgorithm.setProps(props);
         keyGenerateAlgorithm.init();
         String actualGenerateKey0 = Long.toBinaryString(Long.parseLong(keyGenerateAlgorithm.generateKey().toString()));
@@ -133,7 +133,7 @@ public final class SnowflakeKeyGenerateAlgorithmTest {
         TimeService timeService = new FixedTimeService(1);
         SnowflakeKeyGenerateAlgorithm.setTimeService(timeService);
         Properties props = new Properties();
-        props.setProperty("max.tolerate.time.difference.milliseconds", String.valueOf(0));
+        props.setProperty("max-tolerate-time-difference-milliseconds", String.valueOf(0));
         keyGenerateAlgorithm.setProps(props);
         keyGenerateAlgorithm.init();
         setLastMilliseconds(keyGenerateAlgorithm, timeService.getCurrentMillis() + 2);
@@ -161,14 +161,14 @@ public final class SnowflakeKeyGenerateAlgorithmTest {
         assertThat(actual, is(expected));
     }
     
-    @SneakyThrows
+    @SneakyThrows(ReflectiveOperationException.class)
     private void setSequence(final SnowflakeKeyGenerateAlgorithm keyGenerateAlgorithm, final Number value) {
         Field sequence = SnowflakeKeyGenerateAlgorithm.class.getDeclaredField("sequence");
         sequence.setAccessible(true);
         sequence.set(keyGenerateAlgorithm, value);
     }
     
-    @SneakyThrows
+    @SneakyThrows(ReflectiveOperationException.class)
     private void setLastMilliseconds(final SnowflakeKeyGenerateAlgorithm keyGenerateAlgorithm, final Number value) {
         Field lastMilliseconds = SnowflakeKeyGenerateAlgorithm.class.getDeclaredField("lastMilliseconds");
         lastMilliseconds.setAccessible(true);
@@ -179,7 +179,7 @@ public final class SnowflakeKeyGenerateAlgorithmTest {
     public void assertSetWorkerIdFailureWhenNegative() {
         SnowflakeKeyGenerateAlgorithm keyGenerateAlgorithm = new SnowflakeKeyGenerateAlgorithm();
         Properties props = new Properties();
-        props.setProperty("worker.id", String.valueOf(-1L));
+        props.setProperty("worker-id", String.valueOf(-1L));
         keyGenerateAlgorithm.setProps(props);
         keyGenerateAlgorithm.init();
         keyGenerateAlgorithm.generateKey();
@@ -189,7 +189,7 @@ public final class SnowflakeKeyGenerateAlgorithmTest {
     public void assertSetMaxVibrationOffsetFailureWhenNegative() {
         SnowflakeKeyGenerateAlgorithm keyGenerateAlgorithm = new SnowflakeKeyGenerateAlgorithm();
         Properties props = new Properties();
-        props.setProperty("max.vibration.offset", String.valueOf(-1));
+        props.setProperty("max-vibration-offset", String.valueOf(-1));
         keyGenerateAlgorithm.setProps(props);
         keyGenerateAlgorithm.init();
         keyGenerateAlgorithm.generateKey();
@@ -199,7 +199,7 @@ public final class SnowflakeKeyGenerateAlgorithmTest {
     public void assertSetWorkerIdFailureWhenOutOfRange() {
         SnowflakeKeyGenerateAlgorithm keyGenerateAlgorithm = new SnowflakeKeyGenerateAlgorithm();
         Properties props = new Properties();
-        props.setProperty("worker.id", String.valueOf(Long.MIN_VALUE));
+        props.setProperty("worker-id", String.valueOf(Long.MIN_VALUE));
         keyGenerateAlgorithm.setProps(props);
         keyGenerateAlgorithm.init();
         keyGenerateAlgorithm.generateKey();
@@ -209,35 +209,33 @@ public final class SnowflakeKeyGenerateAlgorithmTest {
     public void assertSetMaxVibrationOffsetFailureWhenOutOfRange() {
         SnowflakeKeyGenerateAlgorithm keyGenerateAlgorithm = new SnowflakeKeyGenerateAlgorithm();
         Properties props = new Properties();
-        props.setProperty("max.vibration.offset", String.valueOf(4096));
+        props.setProperty("max-vibration-offset", String.valueOf(4096));
         keyGenerateAlgorithm.setProps(props);
         keyGenerateAlgorithm.init();
         keyGenerateAlgorithm.generateKey();
     }
     
     @Test
-    @SneakyThrows
-    public void assertSetWorkerIdSuccess() {
+    public void assertSetWorkerIdSuccess() throws NoSuchFieldException, IllegalAccessException {
         SnowflakeKeyGenerateAlgorithm keyGenerateAlgorithm = new SnowflakeKeyGenerateAlgorithm();
         Properties props = new Properties();
-        props.setProperty("worker.id", String.valueOf(1L));
+        props.setProperty("worker-id", String.valueOf(1L));
         keyGenerateAlgorithm.setProps(props);
         keyGenerateAlgorithm.init();
         Field field = keyGenerateAlgorithm.getClass().getDeclaredField("props");
         field.setAccessible(true);
-        assertThat(((Properties) field.get(keyGenerateAlgorithm)).getProperty("worker.id"), is("1"));
+        assertThat(((Properties) field.get(keyGenerateAlgorithm)).getProperty("worker-id"), is("1"));
     }
     
     @Test
-    @SneakyThrows
-    public void assertSetMaxTolerateTimeDifferenceMilliseconds() {
+    public void assertSetMaxTolerateTimeDifferenceMilliseconds() throws NoSuchFieldException, IllegalAccessException {
         SnowflakeKeyGenerateAlgorithm keyGenerateAlgorithm = new SnowflakeKeyGenerateAlgorithm();
         Properties props = new Properties();
-        props.setProperty("max.tolerate.time.difference.milliseconds", String.valueOf(1));
+        props.setProperty("max-tolerate-time-difference-milliseconds", String.valueOf(1));
         keyGenerateAlgorithm.setProps(props);
         keyGenerateAlgorithm.init();
         Field field = keyGenerateAlgorithm.getClass().getDeclaredField("props");
         field.setAccessible(true);
-        assertThat(((Properties) field.get(keyGenerateAlgorithm)).getProperty("max.tolerate.time.difference.milliseconds"), is("1"));
+        assertThat(((Properties) field.get(keyGenerateAlgorithm)).getProperty("max-tolerate-time-difference-milliseconds"), is("1"));
     }
 }

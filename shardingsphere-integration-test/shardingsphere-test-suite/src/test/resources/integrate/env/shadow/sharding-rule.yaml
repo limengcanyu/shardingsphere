@@ -18,8 +18,10 @@
 rules:
 - !SHADOW
   column: shadow
-  shadowMappings:
-    db: shadow_db
+  sourceDataSourceNames:
+    - ds
+  shadowDataSourceNames:
+    - shadow_db
 
 - !SHARDING
   tables:
@@ -43,11 +45,11 @@ rules:
     database_inline:
       type: INLINE
       props:
-        algorithm.expression: db
+        algorithm-expression: db
     table_inline:
       type: INLINE
       props:
-        algorithm.expression: t_order_item
+        algorithm-expression: t_order_item
   
   keyGenerators:
     constant:

@@ -26,32 +26,28 @@ execute
     | delete
     | replace
     | createTable
-    | alterTable
+    | alterStatement
     | repairTable
-    | renameTableSpecification
     | dropTable
     | truncateTable
     | createIndex
     | dropIndex
     | createProcedure
-    | alterProcedure
     | dropProcedure
     | createFunction
-    | alterFunction
     | dropFunction
     | createDatabase
-    | alterDatabase
     | dropDatabase
     | createEvent
-    | alterEvent
     | dropEvent
-    | alterInstance
     | createLogfileGroup
-    | alterLogfileGroup
     | dropLogfileGroup
     | createServer
-    | alterServer
     | dropServer
+    | createView
+    | dropView
+    | createTrigger
+    | dropTrigger
     | setTransaction
     | beginTransaction
     | setAutoCommit
@@ -71,13 +67,7 @@ execute
     | setPassword
     | use
     | explain
-    | showDatabases
-    | showTables
-    | showTableStatus
-    | showColumns
-    | showIndex
-    | showCreateTable
-    | showOther
+    | show
     | setVariable
     | setName
     | setCharacter
@@ -85,5 +75,7 @@ execute
     | changeMasterTo
     | startSlave
     | stopSlave
-    ) SEMI_?
+    | analyzeTable
+    | renameTable
+    ) (SEMI_ EOF? | EOF)
     ;

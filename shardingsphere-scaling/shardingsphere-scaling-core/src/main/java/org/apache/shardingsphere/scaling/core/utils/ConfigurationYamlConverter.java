@@ -21,15 +21,18 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.apache.shardingsphere.governance.core.yaml.config.YamlDataSourceConfigurationWrap;
+import org.apache.shardingsphere.governance.core.yaml.swapper.DataSourceConfigurationYamlSwapper;
 import org.apache.shardingsphere.infra.config.datasource.DataSourceConfiguration;
+import org.apache.shardingsphere.infra.yaml.config.YamlRootRuleConfigurations;
+import org.apache.shardingsphere.infra.yaml.config.YamlRuleConfiguration;
 import org.apache.shardingsphere.infra.yaml.engine.YamlEngine;
-import org.apache.shardingsphere.governance.core.common.yaml.config.YamlDataSourceConfiguration;
-import org.apache.shardingsphere.governance.core.common.yaml.swapper.DataSourceConfigurationYamlSwapper;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
 import org.apache.shardingsphere.sharding.yaml.config.YamlShardingRuleConfiguration;
 import org.apache.shardingsphere.sharding.yaml.swapper.ShardingRuleConfigurationYamlSwapper;
 
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * YAML converter for configuration.
@@ -43,11 +46,10 @@ public final class ConfigurationYamlConverter {
      * @param data data
      * @return data source configurations
      */
-    @SuppressWarnings("unchecked")
     public static Map<String, DataSourceConfiguration> loadDataSourceConfigurations(final String data) {
-        Map<String, YamlDataSourceConfiguration> result = (Map<String, YamlDataSourceConfiguration>) YamlEngine.unmarshal(data);
-        Preconditions.checkState(!result.isEmpty(), "No available data sources to load for governance.");
-        return Maps.transformValues(result, new DataSourceConfigurationYamlSwapper()::swapToObject);
+        YamlDataSourceConfigurationWrap result = YamlEngine.unmarshal(data, YamlDataSourceConfigurationWrap.class);
+        Preconditions.checkState(!result.getDataSources().isEmpty(), "No available data sources to load for governance.");
+        return Maps.transformValues(result.getDataSources(), new DataSourceConfigurationYamlSwapper()::swapToObject);
     }
     
     /**
@@ -57,6 +59,9 @@ public final class ConfigurationYamlConverter {
      * @return sharding rule configuration
      */
     public static ShardingRuleConfiguration loadShardingRuleConfiguration(final String data) {
-        return new ShardingRuleConfigurationYamlSwapper().swapToObject(YamlEngine.unmarshal(data, YamlShardingRuleConfiguration.class));
+        YamlRootRuleConfigurations rootRuleConfigurations = YamlEngine.unmarshal(data, YamlRootRuleConfigurations.class);
+        Optional<YamlRuleConfiguration> ruleConfig = rootRuleConfigurations.getRules().stream().filter(each -> each instanceof YamlShardingRuleConfiguration).findFirst();
+        Preconditions.checkState(ruleConfig.isPresent(), "No available sharding rule to load for governance.");
+        return new ShardingRuleConfigurationYamlSwapper().swapToObject((YamlShardingRuleConfiguration) ruleConfig.get());
     }
 }

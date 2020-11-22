@@ -24,8 +24,8 @@ show
     ;
 
 set
-    : SET runtimeScope_?
-    (timeZoneClause_
+    : SET runtimeScope?
+    (timeZoneClause
     | configurationParameterClause
     | varName FROM CURRENT
     | TIME ZONE zoneValue
@@ -38,16 +38,16 @@ set
     | XML OPTION documentOrContent)
     ;
 
-runtimeScope_
+runtimeScope
     : SESSION | LOCAL
     ;
 
-timeZoneClause_
+timeZoneClause
     : TIME ZONE (numberLiterals | LOCAL | DEFAULT)
     ;
 
 configurationParameterClause
-    : identifier (TO | EQ_) (identifier | STRING_ | DEFAULT)
+    : varName (TO | EQ_) (varList | DEFAULT)
     ;
 
 resetParameter
@@ -128,5 +128,14 @@ vacAnalyzeOptionName
 
 load
     : LOAD fileName
+    ;
+
+valuesClause
+    : VALUES LP_ exprList RP_
+    | valuesClause COMMA_ LP_ exprList RP_
+    ;
+
+vacuum
+    : VACUUM ((FULL? FREEZE? VERBOSE? ANALYZE?) | (LP_ vacAnalyzeOptionList RP_)) vacuumRelationList?
     ;
 

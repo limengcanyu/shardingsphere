@@ -28,26 +28,50 @@ REDO_LOG_
     ;
     
 FILESIZE_LITERAL
-    : INT_ ('K'|'M'|'G'|'T')
+    : INT_NUM_ ('K'|'M'|'G'|'T')
     ;
 
 IDENTIFIER_
     : [A-Za-z_$0-9]*?[A-Za-z_$]+?[A-Za-z_$0-9]*
     |  BQ_ ~'`'+ BQ_
-    | (DQ_ ( '\\'. | '""' | ~('"'| '\\') )* DQ_)
     ;
 
-Y_N_
-    : SQ_ ('Y' | 'N') SQ_
+STRING_
+    : DOUBLE_QUOTED_TEXT | SINGLE_QUOTED_TEXT
     ;
 
-STRING_ 
-    : (DQ_ ( '\\'. | '""' | ~('"'| '\\') )* DQ_)
-    | (SQ_ ('\\'. | '\'\'' | ~('\'' | '\\'))* SQ_)
+SINGLE_QUOTED_TEXT
+    : SQ_ ('\\'. | '\'\'' | ~('\'' | '\\'))* SQ_
+    ;
+
+DOUBLE_QUOTED_TEXT
+    : DQ_ ( '\\'. | '""' | ~('"'| '\\') )* DQ_
+    ;
+
+NCHAR_TEXT
+    : N SINGLE_QUOTED_TEXT
+    ;
+
+UNDERSCORE_CHARSET
+    : UL_ [a-z0-9]+
     ;
 
 NUMBER_
-    : INT_? DOT_? INT_ (E (PLUS_ | MINUS_)? INT_)?
+    : INT_NUM_
+    | FLOAT_NUM_
+    | DECIMAL_NUM_
+    ;
+
+INT_NUM_
+    : DIGIT+
+    ;
+
+FLOAT_NUM_
+    : INT_NUM_? DOT_? INT_NUM_ E (PLUS_ | MINUS_)? INT_NUM_
+    ;
+
+DECIMAL_NUM_
+    : INT_NUM_? DOT_ INT_NUM_
     ;
 
 HEX_DIGIT_
@@ -62,8 +86,8 @@ NOT_SUPPORT_
     : 'not support'
     ;
 
-fragment INT_
-    : [0-9]+
+fragment DIGIT
+    : [0-9]
     ;
 
 fragment HEX_

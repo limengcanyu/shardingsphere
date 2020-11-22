@@ -19,10 +19,9 @@ package org.apache.shardingsphere.proxy.backend;
 
 import lombok.SneakyThrows;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
-import org.apache.shardingsphere.infra.database.type.DatabaseTypes;
+import org.apache.shardingsphere.infra.database.type.DatabaseTypeRegistry;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
-import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.ConnectionStateHandler;
-import org.apache.shardingsphere.proxy.backend.schema.ProxySchemaContexts;
+import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.text.TextProtocolBackendHandler;
 import org.apache.shardingsphere.proxy.backend.text.TextProtocolBackendHandlerFactory;
 import org.apache.shardingsphere.proxy.backend.text.admin.BroadcastBackendHandler;
@@ -32,15 +31,15 @@ import org.apache.shardingsphere.proxy.backend.text.admin.UseDatabaseBackendHand
 import org.apache.shardingsphere.proxy.backend.text.query.QueryBackendHandler;
 import org.apache.shardingsphere.proxy.backend.text.sctl.set.ShardingCTLSetBackendHandler;
 import org.apache.shardingsphere.proxy.backend.text.sctl.show.ShardingCTLShowBackendHandler;
-import org.apache.shardingsphere.proxy.backend.text.transaction.SkipBackendHandler;
+import org.apache.shardingsphere.proxy.backend.text.skip.SkipBackendHandler;
 import org.apache.shardingsphere.proxy.backend.text.transaction.TransactionBackendHandler;
 import org.apache.shardingsphere.transaction.ShardingTransactionManagerEngine;
 import org.apache.shardingsphere.transaction.context.TransactionContexts;
 import org.apache.shardingsphere.transaction.core.TransactionType;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
@@ -55,26 +54,26 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public final class TextProtocolBackendHandlerFactoryTest {
     
-    private final DatabaseType databaseType = DatabaseTypes.getActualDatabaseType("MySQL");
+    private final DatabaseType databaseType = DatabaseTypeRegistry.getActualDatabaseType("MySQL");
     
-    @Mock
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private BackendConnection backendConnection;
     
     @Before
     public void setUp() {
-        when(backendConnection.getTransactionType()).thenReturn(TransactionType.LOCAL);
+        when(backendConnection.getTransactionStatus().getTransactionType()).thenReturn(TransactionType.LOCAL);
         setTransactionContexts();
-        when(backendConnection.getSchema()).thenReturn("schema");
+        when(backendConnection.getSchemaName()).thenReturn("schema");
     }
     
     @SneakyThrows(ReflectiveOperationException.class)
     private void setTransactionContexts() {
-        Field transactionContexts = ProxySchemaContexts.getInstance().getClass().getDeclaredField("transactionContexts");
+        Field transactionContexts = ProxyContext.getInstance().getClass().getDeclaredField("transactionContexts");
         transactionContexts.setAccessible(true);
-        transactionContexts.set(ProxySchemaContexts.getInstance(), createSchemaContext());
+        transactionContexts.set(ProxyContext.getInstance(), createTransactionContexts());
     }
     
-    private TransactionContexts createSchemaContext() {
+    private TransactionContexts createTransactionContexts() {
         TransactionContexts result = mock(TransactionContexts.class, RETURNS_DEEP_STUBS);
         when(result.getEngines().get("schema")).thenReturn(new ShardingTransactionManagerEngine());
         return result;
@@ -124,9 +123,7 @@ public final class TextProtocolBackendHandlerFactoryTest {
     
     @Test
     public void assertNewInstanceWithSetAutoCommitToOnForInTransaction() {
-        ConnectionStateHandler stateHandler = mock(ConnectionStateHandler.class);
-        when(backendConnection.getStateHandler()).thenReturn(stateHandler);
-        when(stateHandler.isInTransaction()).thenReturn(true);
+        when(backendConnection.getTransactionStatus().isInTransaction()).thenReturn(true);
         String sql = "SET AUTOCOMMIT=1";
         TextProtocolBackendHandler actual = TextProtocolBackendHandlerFactory.newInstance(databaseType, sql, backendConnection);
         assertThat(actual, instanceOf(TransactionBackendHandler.class));
@@ -134,9 +131,7 @@ public final class TextProtocolBackendHandlerFactoryTest {
     
     @Test
     public void assertNewInstanceWithScopeSetAutoCommitToOnForInTransaction() {
-        ConnectionStateHandler stateHandler = mock(ConnectionStateHandler.class);
-        when(backendConnection.getStateHandler()).thenReturn(stateHandler);
-        when(stateHandler.isInTransaction()).thenReturn(true);
+        when(backendConnection.getTransactionStatus().isInTransaction()).thenReturn(true);
         String sql = "SET @@SESSION.AUTOCOMMIT = ON";
         TextProtocolBackendHandler actual = TextProtocolBackendHandlerFactory.newInstance(databaseType, sql, backendConnection);
         assertThat(actual, instanceOf(TransactionBackendHandler.class));
@@ -145,9 +140,7 @@ public final class TextProtocolBackendHandlerFactoryTest {
     @Test
     public void assertNewInstanceWithSetAutoCommitToOnForNotInTransaction() {
         String sql = "SET AUTOCOMMIT=1";
-        ConnectionStateHandler stateHandler = mock(ConnectionStateHandler.class);
-        when(backendConnection.getStateHandler()).thenReturn(stateHandler);
-        when(stateHandler.isInTransaction()).thenReturn(false);
+        when(backendConnection.getTransactionStatus().isInTransaction()).thenReturn(false);
         TextProtocolBackendHandler actual = TextProtocolBackendHandlerFactory.newInstance(databaseType, sql, backendConnection);
         assertThat(actual, instanceOf(SkipBackendHandler.class));
     }
@@ -167,17 +160,15 @@ public final class TextProtocolBackendHandlerFactoryTest {
     }
     
     @Test
-    @Ignore("There are three SetStatement class")
     public void assertNewInstanceWithSet() {
         String sql = "set @num=1";
         TextProtocolBackendHandler actual = TextProtocolBackendHandlerFactory.newInstance(databaseType, sql, backendConnection);
-        // FIXME: There are three SetStatement class.
         assertThat(actual, instanceOf(BroadcastBackendHandler.class));
     }
     
     @Test
     public void assertNewInstanceWithShow() {
-        String sql = "SHOW VARIABLES LIKE %x%";
+        String sql = "SHOW VARIABLES LIKE '%x%'";
         TextProtocolBackendHandler actual = TextProtocolBackendHandlerFactory.newInstance(databaseType, sql, backendConnection);
         assertThat(actual, instanceOf(UnicastBackendHandler.class));
         sql = "SHOW VARIABLES WHERE Variable_name ='language'";

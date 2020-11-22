@@ -36,7 +36,7 @@ import static org.junit.Assert.assertThat;
  * With clause assert.
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class WithClauseAssert {
+public final class WithClauseAssert {
     
     /**
      * Assert actual with segment is correct with expected with clause.
@@ -46,8 +46,8 @@ public class WithClauseAssert {
      * @param expected expected with clause
      */
     public static void assertIs(final SQLCaseAssertContext assertContext, final WithSegment actual, final ExpectedWithClause expected) {
-        assertNotNull(assertContext.getText("On duplicate key columns should exist."), expected);
-        assertThat(assertContext.getText("On duplicate key columns size assertion error: "), 
+        assertNotNull(assertContext.getText("With clause should exist."), expected);
+        assertThat(assertContext.getText("With clause common table expressions size assertion error: "), 
                 actual.getCommonTableExpressions().size(), is(expected.getCommonTableExpressions().size()));
         int count = 0;
         for (CommonTableExpressionSegment each : actual.getCommonTableExpressions()) {

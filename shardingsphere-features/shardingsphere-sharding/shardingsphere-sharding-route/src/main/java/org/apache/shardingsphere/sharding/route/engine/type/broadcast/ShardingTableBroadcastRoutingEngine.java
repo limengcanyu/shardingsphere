@@ -20,16 +20,16 @@ package org.apache.shardingsphere.sharding.route.engine.type.broadcast;
 import com.google.common.base.Preconditions;
 import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.infra.datanode.DataNode;
+import org.apache.shardingsphere.infra.route.context.RouteContext;
+import org.apache.shardingsphere.infra.route.context.RouteMapper;
+import org.apache.shardingsphere.infra.route.context.RouteUnit;
+import org.apache.shardingsphere.sharding.route.engine.type.ShardingRouteEngine;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sharding.rule.TableRule;
-import org.apache.shardingsphere.sharding.route.engine.type.ShardingRouteEngine;
-import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.index.IndexSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropIndexStatement;
-import org.apache.shardingsphere.sql.parser.binder.metadata.schema.SchemaMetaData;
-import org.apache.shardingsphere.infra.route.context.RouteResult;
-import org.apache.shardingsphere.infra.route.context.RouteUnit;
-import org.apache.shardingsphere.infra.route.context.RouteMapper;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -42,17 +42,15 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public final class ShardingTableBroadcastRoutingEngine implements ShardingRouteEngine {
     
-    private final SchemaMetaData schemaMetaData;
+    private final ShardingSphereSchema schema;
     
-    private final SQLStatementContext sqlStatementContext;
+    private final SQLStatementContext<?> sqlStatementContext;
     
     @Override
-    public RouteResult route(final ShardingRule shardingRule) {
-        RouteResult result = new RouteResult();
+    public void route(final RouteContext routeContext, final ShardingRule shardingRule) {
         for (String each : getLogicTableNames()) {
-            result.getRouteUnits().addAll(getAllRouteUnits(shardingRule, each));
+            routeContext.getRouteUnits().addAll(getAllRouteUnits(shardingRule, each));
         }
-        return result;
     }
     
     private Collection<String> getLogicTableNames() {
@@ -71,8 +69,8 @@ public final class ShardingTableBroadcastRoutingEngine implements ShardingRouteE
     }
     
     private Optional<String> findLogicTableNameFromMetaData(final String logicIndexName) {
-        for (String each : schemaMetaData.getAllTableNames()) {
-            if (schemaMetaData.get(each).getIndexes().containsKey(logicIndexName)) {
+        for (String each : schema.getAllTableNames()) {
+            if (schema.get(each).getIndexes().containsKey(logicIndexName)) {
                 return Optional.of(each);
             }
         }

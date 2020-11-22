@@ -30,7 +30,7 @@ import org.apache.shardingsphere.db.protocol.mysql.packet.command.query.text.fie
 import org.apache.shardingsphere.db.protocol.mysql.packet.command.query.text.query.MySQLComQueryPacket;
 import org.apache.shardingsphere.db.protocol.packet.CommandPacket;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
-import org.apache.shardingsphere.proxy.frontend.api.CommandExecutor;
+import org.apache.shardingsphere.proxy.frontend.command.executor.CommandExecutor;
 import org.apache.shardingsphere.proxy.frontend.mysql.command.admin.initdb.MySQLComInitDbExecutor;
 import org.apache.shardingsphere.proxy.frontend.mysql.command.admin.ping.MySQLComPingExecutor;
 import org.apache.shardingsphere.proxy.frontend.mysql.command.admin.quit.MySQLComQuitExecutor;
@@ -68,16 +68,16 @@ public final class MySQLCommandExecutorFactory {
                 return new MySQLComFieldListPacketExecutor((MySQLComFieldListPacket) commandPacket, backendConnection);
             case COM_QUERY:
                 return new MySQLComQueryPacketExecutor((MySQLComQueryPacket) commandPacket, backendConnection);
+            case COM_PING:
+                return new MySQLComPingExecutor();
             case COM_STMT_PREPARE:
-                return new MySQLComStmtPrepareExecutor((MySQLComStmtPreparePacket) commandPacket, backendConnection);
+                return new MySQLComStmtPrepareExecutor((MySQLComStmtPreparePacket) commandPacket);
             case COM_STMT_EXECUTE:
                 return new MySQLComStmtExecuteExecutor((MySQLComStmtExecutePacket) commandPacket, backendConnection);
             case COM_STMT_RESET:
                 return new MySQLComStmtResetExecutor((MySQLComStmtResetPacket) commandPacket);
             case COM_STMT_CLOSE:
                 return new MySQLComStmtCloseExecutor((MySQLComStmtClosePacket) commandPacket);
-            case COM_PING:
-                return new MySQLComPingExecutor();
             default:
                 return new MySQLUnsupportedCommandExecutor(commandPacketType);
         }
